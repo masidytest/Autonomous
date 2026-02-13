@@ -14,7 +14,8 @@ export type ServerEvent =
   | { type: 'terminal:output'; taskId: string; output: string }
   | { type: 'browser:screenshot'; taskId: string; url: string; imageBase64: string }
   | { type: 'agent:thinking'; taskId: string; thought: string }
-  | { type: 'agent:message'; taskId: string; content: string };
+  | { type: 'agent:message'; taskId: string; content: string }
+  | { type: 'deploy:completed'; projectId: string; url: string };
 
 export type ClientEvent =
   | { type: 'task:create'; projectId: string; prompt: string }

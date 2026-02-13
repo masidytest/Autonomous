@@ -17,8 +17,13 @@ const connectionString =
 
 console.log(`DB connecting to: ${connectionString.replace(/:[^:@]+@/, ':***@')}`);
 
+const needsSsl =
+  connectionString.includes('supabase.co') ||
+  connectionString.includes('.render.com') ||
+  connectionString.includes('ssl=true');
+
 const client = postgres(connectionString, {
-  ssl: connectionString.includes('supabase.co') ? 'require' : false,
+  ssl: needsSsl ? 'require' : false,
 });
 export const db = drizzle(client, { schema });
 

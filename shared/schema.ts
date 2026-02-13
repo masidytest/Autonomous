@@ -70,6 +70,7 @@ export const users = pgTable('users', {
   avatarUrl: text('avatar_url'),
   provider: text('provider').default('github'),
   providerId: text('provider_id'),
+  githubAccessToken: text('github_access_token'),
   plan: text('plan').default('free'),
   tokensUsedToday: integer('tokens_used_today').default(0),
   createdAt: timestamp('created_at').defaultNow().notNull(),

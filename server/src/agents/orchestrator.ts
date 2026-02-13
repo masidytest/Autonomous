@@ -202,7 +202,7 @@ export class AgentOrchestrator {
     this.terminalTool = new TerminalTool(this.sandbox);
     this.browserTool = new BrowserTool();
     this.searchTool = new SearchTool();
-    this.deployTool = new DeployTool(this.sandbox, projectSlug);
+    this.deployTool = new DeployTool(this.sandbox, projectSlug, projectId);
     this.anthropic = new Anthropic({
       apiKey: process.env.ANTHROPIC_API_KEY,
     });
@@ -617,7 +617,15 @@ export class AgentOrchestrator {
       }
 
       case 'deploy': {
-        return await this.deployTool.deploy(input);
+        const deployResult = await this.deployTool.deploy(input);
+        if (deployResult.success && deployResult.metadata?.url) {
+          this.emit({
+            type: 'deploy:completed',
+            projectId: this.projectId,
+            url: deployResult.metadata.url as string,
+          });
+        }
+        return deployResult;
       }
 
       case 'ask_user': {

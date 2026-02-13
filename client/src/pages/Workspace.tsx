@@ -44,7 +44,7 @@ import { NewProjectModal } from '../components/NewProjectModal';
 import { InviteModal } from '../components/InviteModal';
 import { SettingsModal } from '../components/SettingsModal';
 import { useAgentStore } from '../stores/agent-store';
-import { fetchProject, createProject } from '../lib/api';
+import { fetchProject, createProject, createGitHubRepo, pushToGitHub, shareProject, getDownloadUrl } from '../lib/api';
 import { joinProject, leaveProject, createTask, cancelTask, resumeTask } from '../lib/socket';
 import type { ChatMessage as ChatMessageType } from '@shared/types';
 
@@ -91,6 +91,7 @@ export function Workspace() {
     files,
     selectedFile,
     terminalOutput,
+    deployUrl,
     reset,
   } = useAgentStore();
 
@@ -175,13 +176,21 @@ export function Workspace() {
   }
 
   function handleShare() {
-    setInviteOpen(true);
+    if (!currentProject) {
+      setInviteOpen(true);
+      return;
+    }
+    shareProject(currentProject.id)
+      .then(({ shareUrl }) => {
+        navigator.clipboard.writeText(shareUrl);
+        alert(`Share link copied to clipboard!\n${shareUrl}`);
+      })
+      .catch(() => setInviteOpen(true));
   }
 
   function handlePublish() {
     if (!currentProject) return;
-    // Trigger deploy via chat
-    const deployPrompt = `Deploy the project to production. Set up a simple HTTP server and make the app accessible.`;
+    const deployPrompt = `Deploy the project to production. Use the deploy tool with appropriate build and start commands.`;
     createTask(currentProject.id, deployPrompt);
   }
 
@@ -189,10 +198,23 @@ export function Workspace() {
     navigate('/');
   }
 
-  function handleGithubHeader() {
+  async function handleGithubHeader() {
     if (!currentProject) return;
-    const ghPrompt = `Initialize a git repository for this project and create a proper .gitignore file.`;
-    createTask(currentProject.id, ghPrompt);
+    const repoName = prompt('Repository name:', currentProject.name.replace(/\s+/g, '-').toLowerCase());
+    if (!repoName) return;
+    try {
+      const { repoUrl, fullName } = await createGitHubRepo(currentProject.id, { name: repoName });
+      // Now push code to the repo
+      const { commitUrl } = await pushToGitHub(currentProject.id, fullName, `Initial commit from Masidy Agent`);
+      alert(`Repository created and code pushed!\n\nRepo: ${repoUrl}\nCommit: ${commitUrl}`);
+    } catch (err: any) {
+      alert(`GitHub error: ${err.message}`);
+    }
+  }
+
+  function handleDownloadZip() {
+    if (!currentProject) return;
+    window.open(getDownloadUrl(currentProject.id), '_blank');
   }
 
   function handleAttach() {
@@ -966,20 +988,32 @@ export function Workspace() {
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                {deployUrl && (
+                  <a
+                    href={deployUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 5,
+                      padding: '5px 12px',
+                      fontSize: 12,
+                      fontWeight: 600,
+                      color: '#16a34a',
+                      backgroundColor: '#f0fdf4',
+                      border: '1px solid #bbf7d0',
+                      borderRadius: 6,
+                      textDecoration: 'none',
+                      fontFamily: 'inherit',
+                    }}
+                  >
+                    <ExternalLink size={12} />
+                    Live
+                  </a>
+                )}
                 <button
-                  onClick={() => {
-                    // Download all project files
-                    if (files.length > 0) {
-                      const allContent = files.map(f => `// === ${f.path} ===\n${f.content}`).join('\n\n');
-                      const blob = new Blob([allContent], { type: 'text/plain' });
-                      const url = URL.createObjectURL(blob);
-                      const a = document.createElement('a');
-                      a.href = url;
-                      a.download = `${currentProject?.name || 'project'}-files.txt`;
-                      a.click();
-                      URL.revokeObjectURL(url);
-                    }
-                  }}
+                  onClick={handleDownloadZip}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -996,7 +1030,7 @@ export function Workspace() {
                   }}
                 >
                   <Download size={12} />
-                  Export
+                  Download ZIP
                 </button>
                 <button style={previewToolbarBtnStyle} title="Fullscreen" onClick={() => setIsFullscreen(true)}>
                   <Maximize2 size={14} />

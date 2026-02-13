@@ -19,6 +19,7 @@ import { NewProjectModal } from '../components/NewProjectModal';
 import { InviteModal } from '../components/InviteModal';
 import { SettingsModal } from '../components/SettingsModal';
 import { createProject } from '../lib/api';
+import { isAuthenticated, savePendingPrompt } from '../lib/auth';
 
 const quickChips = [
   'Create a landing page',
@@ -55,6 +56,14 @@ export function Dashboard() {
   async function handleSend(text?: string) {
     const finalPrompt = (text || prompt).trim();
     if (!finalPrompt || creating) return;
+
+    // Check auth — save prompt and redirect if not logged in
+    if (!isAuthenticated()) {
+      savePendingPrompt(finalPrompt);
+      navigate('/auth');
+      return;
+    }
+
     setCreating(true);
     try {
       const name = finalPrompt.slice(0, 50) || 'New Project';

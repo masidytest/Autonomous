@@ -321,6 +321,7 @@ export function Agents() {
             {/* ── CTA button ── */}
             <div style={{ display: 'flex', justifyContent: 'center' }}>
               <button
+                onClick={() => navigate('/dashboard')}
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',

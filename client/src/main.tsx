@@ -7,6 +7,7 @@ import { Auth } from './pages/Auth';
 import { Dashboard } from './pages/Dashboard';
 import { Agents } from './pages/Agents';
 import { Library } from './pages/Library';
+import { AuthCallback } from './pages/AuthCallback';
 import { Docs } from './pages/Docs';
 import './index.css';
 
@@ -16,6 +17,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       <Routes>
         <Route path="/" element={<ProjectDashboard />} />
         <Route path="/auth" element={<Auth />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/agents" element={<Agents />} />
         <Route path="/library" element={<Library />} />

@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Github } from 'lucide-react';
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || '';
+
 export function Auth() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
@@ -9,7 +11,7 @@ export function Auth() {
 
   function handleOAuth(provider: string) {
     if (provider === 'github') {
-      window.location.href = '/api/auth/github';
+      window.location.href = `${BACKEND_URL}/api/auth/github`;
     }
   }
 

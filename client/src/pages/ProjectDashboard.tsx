@@ -16,6 +16,7 @@ import {
   Youtube,
 } from 'lucide-react';
 import { fetchProjects, createProject, type ProjectData } from '../lib/api';
+import { isAuthenticated, savePendingPrompt } from '../lib/auth';
 
 const quickActions = [
   { label: 'Build website', icon: Globe },
@@ -24,6 +25,34 @@ const quickActions = [
   { label: 'Design UI', icon: Paintbrush },
   { label: 'Other', icon: null },
 ];
+
+const footerLinks: Record<string, string> = {
+  'Web Application': '/dashboard',
+  'AI Design': '/agents',
+  'AI Slides': '/agents',
+  'Browser Agent': '/agents',
+  'Deep Research': '/agents',
+  'Blog': '/docs',
+  'Documentation': '/docs',
+  'Updates': '/docs',
+  'Help Center': '/docs',
+  'API': '/docs',
+  'Events': '/library',
+  'Discord': '#',
+  'Fellows': '/library',
+  'Playbook': '/docs',
+  'VS ChatGPT': '/agents',
+  'VS Copilot': '/agents',
+  'VS Cursor': '/agents',
+  'Desktop App': '#',
+  'Mobile App': '#',
+  'VS Code Extension': '#',
+  'About': '/docs',
+  'Careers': '#',
+  'Press': '#',
+  'Privacy': '#',
+  'Terms': '#',
+};
 
 const footerColumns = [
   {
@@ -85,6 +114,14 @@ export function ProjectDashboard() {
 
   async function handleSubmit() {
     if (!prompt.trim() || creating) return;
+
+    // Check auth — save prompt and redirect if not logged in
+    if (!isAuthenticated()) {
+      savePendingPrompt(prompt.trim());
+      navigate('/auth');
+      return;
+    }
+
     setCreating(true);
     try {
       const name = prompt.trim().slice(0, 50) || 'New Project';
@@ -215,10 +252,16 @@ export function ProjectDashboard() {
               gap: 36,
             }}
           >
-            {['Features', 'Resources', 'Docs', 'Pricing'].map((link) => (
+            {[
+              { label: 'Features', route: '/agents' },
+              { label: 'Resources', route: '/library' },
+              { label: 'Docs', route: '/docs' },
+              { label: 'Pricing', route: '/library' },
+            ].map((link) => (
               <a
-                key={link}
-                href="#"
+                key={link.label}
+                href={link.route}
+                onClick={(e) => { e.preventDefault(); navigate(link.route); }}
                 style={{
                   fontSize: 14,
                   color: '#666',
@@ -228,7 +271,7 @@ export function ProjectDashboard() {
                 onMouseEnter={(e) => (e.currentTarget.style.color = '#1a1a1a')}
                 onMouseLeave={(e) => (e.currentTarget.style.color = '#666')}
               >
-                {link}
+                {link.label}
               </a>
             ))}
           </div>
@@ -284,7 +327,8 @@ export function ProjectDashboard() {
           Masidy Agent — Autonomous AI Software Engineer
         </span>
         <a
-          href="#"
+          href="/docs"
+          onClick={(e) => { e.preventDefault(); navigate('/docs'); }}
           style={{
             fontSize: 14,
             color: '#fff',
@@ -365,6 +409,7 @@ export function ProjectDashboard() {
               }}
             >
               <button
+                onClick={() => textareaRef.current?.focus()}
                 style={{
                   width: 36,
                   height: 36,
@@ -623,7 +668,14 @@ export function ProjectDashboard() {
                   {col.links.map((link) => (
                     <li key={link} style={{ marginBottom: 10 }}>
                       <a
-                        href="#"
+                        href={footerLinks[link] || '#'}
+                        onClick={(e) => {
+                          const route = footerLinks[link];
+                          if (route && route !== '#') {
+                            e.preventDefault();
+                            navigate(route);
+                          }
+                        }}
                         style={{
                           fontSize: 13,
                           color: '#888',
@@ -660,10 +712,17 @@ export function ProjectDashboard() {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-              {[Github, Twitter, Youtube, Linkedin].map((Icon, i) => (
+              {[
+                { Icon: Github, url: 'https://github.com/masidytest/Autonomous' },
+                { Icon: Twitter, url: 'https://twitter.com' },
+                { Icon: Youtube, url: 'https://youtube.com' },
+                { Icon: Linkedin, url: 'https://linkedin.com' },
+              ].map(({ Icon, url }, i) => (
                 <a
                   key={i}
-                  href="#"
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   style={{ color: '#666', transition: 'color 0.15s' }}
                   onMouseEnter={(e) => (e.currentTarget.style.color = '#fff')}
                   onMouseLeave={(e) => (e.currentTarget.style.color = '#666')}

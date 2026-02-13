@@ -8,9 +8,21 @@ import { eq } from 'drizzle-orm';
 const orchestrators = new Map<string, AgentOrchestrator>();
 
 export function createSocketServer(httpServer: HttpServer): SocketServer {
+  const allowedOrigins = [
+    process.env.CLIENT_URL,
+    'http://localhost:5173',
+    'https://masidy-agent.vercel.app',
+  ].filter(Boolean) as string[];
+
   const io = new SocketServer(httpServer, {
     cors: {
-      origin: process.env.CLIENT_URL || 'http://localhost:5173',
+      origin: (origin: any, callback: any) => {
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.includes(origin) || origin.endsWith('.onrender.com')) {
+          return callback(null, true);
+        }
+        callback(null, true);
+      },
       methods: ['GET', 'POST'],
       credentials: true,
     },

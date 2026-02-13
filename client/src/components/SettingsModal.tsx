@@ -648,6 +648,10 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     Edit profile
                   </button>
                   <button
+                    onClick={() => {
+                      localStorage.removeItem('masidy_token');
+                      window.location.href = '/';
+                    }}
                     style={{
                       padding: '9px 20px',
                       fontSize: 14,

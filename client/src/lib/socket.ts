@@ -7,9 +7,14 @@ let socket: Socket | null = null;
 
 function getSocket(): Socket {
   if (!socket) {
-    socket = io(window.location.origin, {
+    const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || window.location.origin;
+    socket = io(BACKEND_URL, {
       transports: ['websocket', 'polling'],
       autoConnect: true,
+      reconnection: true,
+      reconnectionAttempts: 10,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
     });
     setupListeners(socket);
   }
@@ -155,6 +160,16 @@ function setupListeners(sock: Socket) {
       id: uuidv4(),
       role: 'assistant',
       content: data.content,
+      timestamp: Date.now(),
+    });
+  });
+
+  sock.on('deploy:completed', (data: { projectId: string; url: string }) => {
+    useAgentStore.setState({ deployUrl: data.url });
+    useAgentStore.getState().addMessage({
+      id: uuidv4(),
+      role: 'assistant',
+      content: `Project deployed successfully! Live at: ${data.url}`,
       timestamp: Date.now(),
     });
   });

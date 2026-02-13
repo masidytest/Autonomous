@@ -57,6 +57,10 @@ interface AgentState {
   browserScreenshot: BrowserScreenshot | null;
   setBrowserScreenshot: (screenshot: BrowserScreenshot | null) => void;
 
+  // Deploy
+  deployUrl: string | null;
+  setDeployUrl: (url: string | null) => void;
+
   // Execution state
   isExecuting: boolean;
   isPaused: boolean;
@@ -83,6 +87,7 @@ const initialState = {
   selectedFile: null,
   terminalOutput: '',
   browserScreenshot: null,
+  deployUrl: null,
   isExecuting: false,
   isPaused: false,
   pauseQuestion: null,
@@ -131,6 +136,8 @@ export const useAgentStore = create<AgentState>((set) => ({
     })),
 
   setBrowserScreenshot: (screenshot) => set({ browserScreenshot: screenshot }),
+
+  setDeployUrl: (url) => set({ deployUrl: url }),
 
   setExecuting: (executing) => set({ isExecuting: executing }),
 

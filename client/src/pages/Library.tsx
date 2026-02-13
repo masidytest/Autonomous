@@ -5,7 +5,7 @@ import { SearchModal } from '../components/SearchModal';
 import { NewProjectModal } from '../components/NewProjectModal';
 import { InviteModal } from '../components/InviteModal';
 import { SettingsModal } from '../components/SettingsModal';
-import { createProject } from '../lib/api';
+import { createProject, fetchProjects, fetchAllTasks, type ProjectData, type TaskData } from '../lib/api';
 import {
   SlidersHorizontal,
   Star,
@@ -15,82 +15,17 @@ import {
   Globe,
   MoreHorizontal,
   ChevronDown,
+  Code2,
 } from 'lucide-react';
 
-/* ── Mock library data ── */
-const libraryItems = [
-  {
-    id: '1',
-    title: 'Correcting Typographical Errors in Text',
-    date: 'Wednesday',
-    badge: null,
-    project: {
-      name: 'Unified AI Orchestration Platform',
-      icon: '🌐',
-    },
-    previewColors: ['#1a1a2e', '#16213e', '#0f3460', '#533483', '#e94560'],
-    previewType: 'dark' as const,
-  },
-  {
-    id: '2',
-    title: 'Can you build a full-stack app like v0 and Manus?',
-    date: '',
-    badge: '2/6',
-    project: {
-      name: 'Masidy AI - Full Stack AI Platform',
-      icon: '🌐',
-    },
-    previewColors: ['#0d1117', '#161b22', '#21262d', '#30363d', '#484f58'],
-    previewType: 'dark' as const,
-  },
-  {
-    id: '3',
-    title: 'How to Create an App Like OnlyFans Store',
-    date: '1/31',
-    badge: null,
-    project: {
-      name: 'FanStore Mobile Marketplace',
-      icon: '📱',
-    },
-    previewColors: ['#1e1b4b', '#312e81', '#3730a3', '#4338ca', '#4f46e5'],
-    previewType: 'dark' as const,
-  },
-  {
-    id: '4',
-    title: 'Build REST API with Authentication',
-    date: '1/28',
-    badge: null,
-    project: {
-      name: 'API Auth Service',
-      icon: '⚡',
-    },
-    previewColors: ['#064e3b', '#065f46', '#047857', '#059669', '#10b981'],
-    previewType: 'dark' as const,
-  },
-  {
-    id: '5',
-    title: 'Deploy Next.js App to Vercel',
-    date: '1/25',
-    badge: null,
-    project: {
-      name: 'Next.js Portfolio Site',
-      icon: '🚀',
-    },
-    previewColors: ['#18181b', '#27272a', '#3f3f46', '#52525b', '#71717a'],
-    previewType: 'dark' as const,
-  },
-  {
-    id: '6',
-    title: 'Create Dashboard with Analytics',
-    date: '1/22',
-    badge: null,
-    project: {
-      name: 'Analytics Dashboard',
-      icon: '📊',
-    },
-    previewColors: ['#1e3a5f', '#245071', '#2a6683', '#307c95', '#3692a7'],
-    previewType: 'dark' as const,
-  },
+/* ── Color palettes for project cards ── */
+const colorPalettes = [
+  ['#1a1a2e', '#16213e', '#0f3460', '#533483', '#e94560'],
+  ['#0d1117', '#161b22', '#21262d', '#30363d', '#484f58'],
+  ['#1e1b4b', '#312e81', '#3730a3', '#4338ca', '#4f46e5'],
+  ['#064e3b', '#065f46', '#047857', '#059669', '#10b981'],
+  ['#18181b', '#27272a', '#3f3f46', '#52525b', '#71717a'],
+  ['#1e3a5f', '#245071', '#2a6683', '#307c95', '#3692a7'],
 ];
 
 export function Library() {
@@ -102,6 +37,13 @@ export function Library() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [filter, setFilter] = useState<'all' | 'favorites'>('all');
   const [fileSearch, setFileSearch] = useState('');
+  const [projects, setProjects] = useState<ProjectData[]>([]);
+  const [tasks, setTasks] = useState<TaskData[]>([]);
+
+  useEffect(() => {
+    fetchProjects().then(setProjects).catch(() => {});
+    fetchAllTasks().then(setTasks).catch(() => {});
+  }, []);
 
   useEffect(() => {
     function handleGlobalKey(e: KeyboardEvent) {
@@ -114,9 +56,23 @@ export function Library() {
     return () => window.removeEventListener('keydown', handleGlobalKey);
   }, []);
 
+  // Build library items from real projects + tasks
+  const libraryItems = projects.map((proj, idx) => {
+    const projectTasks = tasks.filter((t) => t.projectId === proj.id);
+    const latestTask = projectTasks[0];
+    return {
+      id: proj.id,
+      title: latestTask?.prompt?.slice(0, 80) || proj.description || proj.name,
+      date: new Date(proj.updatedAt).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' }),
+      badge: projectTasks.length > 1 ? `${projectTasks.length} tasks` : null,
+      projectName: proj.name,
+      previewColors: colorPalettes[idx % colorPalettes.length],
+    };
+  });
+
   const filtered = libraryItems.filter((item) =>
     item.title.toLowerCase().includes(fileSearch.toLowerCase()) ||
-    item.project.name.toLowerCase().includes(fileSearch.toLowerCase()),
+    item.projectName.toLowerCase().includes(fileSearch.toLowerCase()),
   );
 
   return (
@@ -357,6 +313,7 @@ export function Library() {
 
                   {/* Project card with preview */}
                   <div
+                    onClick={() => navigate(`/project/${item.id}`)}
                     style={{
                       backgroundColor: '#fff',
                       borderRadius: 12,
@@ -400,7 +357,7 @@ export function Library() {
                           <Globe size={15} color="#4caf50" />
                         </div>
                         <span style={{ fontSize: 13, fontWeight: 500, color: '#1a1a1a' }}>
-                          {item.project.name}
+                          {item.projectName}
                         </span>
                       </div>
                       <button
@@ -507,6 +464,7 @@ export function Library() {
               {filtered.map((item) => (
                 <button
                   key={item.id}
+                  onClick={() => navigate(`/project/${item.id}`)}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -559,7 +517,7 @@ export function Library() {
                       }}
                     >
                       <Globe size={11} />
-                      {item.project.name}
+                      {item.projectName}
                     </div>
                   </div>
                   {/* Right side */}
