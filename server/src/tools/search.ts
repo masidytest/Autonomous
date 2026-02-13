@@ -1,4 +1,4 @@
-import type { ToolResult } from '@shared/types.js';
+import type { ToolResult } from '../../../shared/types.js';
 
 export class SearchTool {
   async search(query: string): Promise<ToolResult> {

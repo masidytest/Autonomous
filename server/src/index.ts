@@ -1,16 +1,22 @@
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Load .env from project root (server/src/index.ts → ../../.. → project root)
+const __dirname_boot = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.resolve(__dirname_boot, '../..', '.env') });
+
 import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import morgan from 'morgan';
 import session from 'express-session';
 import { createServer } from 'http';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import router from './routes/index.js';
 import { createSocketServer } from './services/socket.js';
 import { setupAuth, createAuthRouter } from './services/auth.js';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const __dirname = __dirname_boot;
 
 const app = express();
 const PORT = parseInt(process.env.PORT || '3001', 10);

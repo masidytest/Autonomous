@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { db } from '../services/database.js';
-import { projects, tasks, steps } from '@shared/schema.js';
+import { projects, tasks, steps } from '../../../shared/schema.js';
 import { eq, desc } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -19,6 +19,7 @@ router.get('/api/projects', async (_req, res) => {
     });
     res.json(result);
   } catch (error: any) {
+    console.error('GET /api/projects error:', error);
     res.status(500).json({ error: error.message });
   }
 });

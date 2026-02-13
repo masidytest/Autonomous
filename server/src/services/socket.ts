@@ -2,7 +2,7 @@ import type { Server as HttpServer } from 'http';
 import { Server as SocketServer } from 'socket.io';
 import { AgentOrchestrator } from '../agents/orchestrator.js';
 import { db } from './database.js';
-import { projects } from '@shared/schema.js';
+import { projects } from '../../../shared/schema.js';
 import { eq } from 'drizzle-orm';
 
 const orchestrators = new Map<string, AgentOrchestrator>();

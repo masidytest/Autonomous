@@ -1,6 +1,6 @@
 import Docker from 'dockerode';
 import { v4 as uuidv4 } from 'uuid';
-import type { ToolResult } from '@shared/types.js';
+import type { ToolResult } from '../../../shared/types.js';
 
 const docker = new Docker({ socketPath: '/var/run/docker.sock' });
 

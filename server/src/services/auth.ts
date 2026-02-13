@@ -2,7 +2,7 @@ import passport from 'passport';
 import { Strategy as GitHubStrategy } from 'passport-github2';
 import { Router } from 'express';
 import { db } from './database.js';
-import { users } from '@shared/schema.js';
+import { users } from '../../../shared/schema.js';
 import { eq } from 'drizzle-orm';
 
 export function setupAuth(app: any) {

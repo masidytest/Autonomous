@@ -1,5 +1,5 @@
 import { chromium, type Browser, type Page } from 'playwright';
-import type { ToolResult } from '@shared/types.js';
+import type { ToolResult } from '../../../shared/types.js';
 
 interface BrowserInput {
   action: 'navigate' | 'screenshot' | 'click' | 'type' | 'scroll' | 'wait';

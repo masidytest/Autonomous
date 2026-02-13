@@ -1,10 +1,10 @@
-import { SandboxManager } from '../agents/sandbox.js';
-import type { ToolResult } from '@shared/types.js';
+import { SupabaseSandbox } from '../agents/supabase-sandbox.js';
+import type { ToolResult } from '../../../shared/types.js';
 
 export class FileSystemTool {
-  private sandbox: SandboxManager;
+  private sandbox: SupabaseSandbox;
 
-  constructor(sandbox: SandboxManager) {
+  constructor(sandbox: SupabaseSandbox) {
     this.sandbox = sandbox;
   }
 

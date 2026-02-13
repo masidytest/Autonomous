@@ -2,9 +2,9 @@ import Anthropic from '@anthropic-ai/sdk';
 import type { Server as SocketServer } from 'socket.io';
 import { eq } from 'drizzle-orm';
 import { db } from '../services/database.js';
-import { tasks, steps, messages, projects, files as filesTable } from '@shared/schema.js';
-import type { StepUpdate, TaskPlan, ToolResult, ServerEvent } from '@shared/types.js';
-import { SandboxManager } from './sandbox.js';
+import { tasks, steps, messages, projects, files as filesTable } from '../../../shared/schema.js';
+import type { StepUpdate, TaskPlan, ToolResult, ServerEvent } from '../../../shared/types.js';
+import { SupabaseSandbox } from './supabase-sandbox.js';
 import { FileSystemTool } from '../tools/filesystem.js';
 import { TerminalTool } from '../tools/terminal.js';
 import { BrowserTool } from '../tools/browser.js';
@@ -179,7 +179,7 @@ export class AgentOrchestrator {
   private projectId: string;
   private taskId: string | null = null;
   private projectSlug: string;
-  private sandbox: SandboxManager;
+  private sandbox: SupabaseSandbox;
   private fsTool: FileSystemTool;
   private terminalTool: TerminalTool;
   private browserTool: BrowserTool;
@@ -197,7 +197,7 @@ export class AgentOrchestrator {
     this.io = io;
     this.projectId = projectId;
     this.projectSlug = projectSlug;
-    this.sandbox = new SandboxManager(projectId);
+    this.sandbox = new SupabaseSandbox(projectId);
     this.fsTool = new FileSystemTool(this.sandbox);
     this.terminalTool = new TerminalTool(this.sandbox);
     this.browserTool = new BrowserTool();
@@ -488,8 +488,8 @@ export class AgentOrchestrator {
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
         return await this.anthropic.messages.create({
-          model: 'claude-sonnet-4-5-20250929',
-          max_tokens: 8096,
+          model: 'claude-opus-4-6',
+          max_tokens: 16384,
           system: SYSTEM_PROMPT,
           tools: TOOL_DEFINITIONS,
           messages: conversationMessages,
