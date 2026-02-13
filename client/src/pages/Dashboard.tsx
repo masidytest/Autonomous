@@ -64,6 +64,8 @@ export function Dashboard() {
       navigate(`/project/${project.id}`, { state: { initialPrompt: finalPrompt } });
     } catch (err) {
       console.error('Failed to create project:', err);
+      const tempId = crypto.randomUUID();
+      navigate(`/project/${tempId}`, { state: { initialPrompt: finalPrompt } });
     } finally {
       setCreating(false);
     }
@@ -77,6 +79,10 @@ export function Dashboard() {
       });
     } catch (err) {
       console.error('Failed to create project:', err);
+      const tempId = crypto.randomUUID();
+      navigate(`/project/${tempId}`, {
+        state: data.description ? { initialPrompt: data.description } : undefined,
+      });
     }
   }
 

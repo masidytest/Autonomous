@@ -124,6 +124,9 @@ export function ProjectDashboard() {
       });
     } catch (err) {
       console.error('Failed to create project:', err);
+      // Fallback: navigate to IDE with a temporary local ID
+      const tempId = crypto.randomUUID();
+      navigate(`/project/${tempId}`, { state: { initialPrompt: prompt.trim() } });
     } finally {
       setCreating(false);
     }
@@ -152,6 +155,8 @@ export function ProjectDashboard() {
           });
         } catch (err) {
           console.error('Failed to create project:', err);
+          const tempId = crypto.randomUUID();
+          navigate(`/project/${tempId}`, { state: { initialPrompt: selectedPrompt } });
         } finally {
           setCreating(false);
         }
