@@ -36,6 +36,7 @@ import {
   Copy,
   X,
   Link2,
+  Download,
 } from 'lucide-react';
 import { Sidebar } from '../components/Sidebar';
 import { SearchModal } from '../components/SearchModal';
@@ -63,12 +64,17 @@ export function Workspace() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const initialPromptSent = useRef(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [inputValue, setInputValue] = useState('');
   const [previewMode, setPreviewMode] = useState<'desktop' | 'mobile'>('desktop');
   const [searchOpen, setSearchOpen] = useState(false);
   const [projectModalOpen, setProjectModalOpen] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [clipboardContent, setClipboardContent] = useState('');
+  const [previewUrl, setPreviewUrl] = useState('/');
+  const [bookmarked, setBookmarked] = useState(false);
 
   const {
     currentProject,
@@ -111,7 +117,6 @@ export function Workspace() {
         }
       })
       .catch(() => {
-        // Fallback: use mock project so IDE works without backend
         setProject({
           id: id,
           name: 'Masidy 1.6 Lite',
@@ -138,10 +143,14 @@ export function Workspace() {
         e.preventDefault();
         setSearchOpen(true);
       }
+      // Escape to exit fullscreen
+      if (e.key === 'Escape' && isFullscreen) {
+        setIsFullscreen(false);
+      }
     }
     window.addEventListener('keydown', handleGlobalKey);
     return () => window.removeEventListener('keydown', handleGlobalKey);
-  }, []);
+  }, [isFullscreen]);
 
   function handleSend() {
     const text = inputValue.trim();
@@ -163,6 +172,96 @@ export function Workspace() {
 
   function handleCancel() {
     if (currentTaskId) cancelTask(currentTaskId);
+  }
+
+  function handleShare() {
+    setInviteOpen(true);
+  }
+
+  function handlePublish() {
+    if (!currentProject) return;
+    // Trigger deploy via chat
+    const deployPrompt = `Deploy the project to production. Set up a simple HTTP server and make the app accessible.`;
+    createTask(currentProject.id, deployPrompt);
+  }
+
+  function handleClose() {
+    navigate('/');
+  }
+
+  function handleGithubHeader() {
+    if (!currentProject) return;
+    const ghPrompt = `Initialize a git repository for this project and create a proper .gitignore file.`;
+    createTask(currentProject.id, ghPrompt);
+  }
+
+  function handleAttach() {
+    fileInputRef.current?.click();
+  }
+
+  function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !currentProject) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const content = reader.result as string;
+      setInputValue((prev) =>
+        prev + (prev ? '\n' : '') + `[Attached: ${file.name}]\n\`\`\`\n${content.slice(0, 5000)}\n\`\`\``
+      );
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  }
+
+  function handleGithubInput() {
+    setInputValue((prev) =>
+      prev + (prev ? ' ' : '') + 'Push this code to GitHub and set up the repository.'
+    );
+    textareaRef.current?.focus();
+  }
+
+  function handleConnectors() {
+    setSettingsOpen(true);
+  }
+
+  function handleVoice() {
+    if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+      alert('Speech recognition is not supported in this browser.');
+      return;
+    }
+    const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-US';
+    recognition.interimResults = false;
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setInputValue((prev) => prev + (prev ? ' ' : '') + transcript);
+    };
+    recognition.start();
+  }
+
+  function handleExternalLink() {
+    if (browserScreenshot?.url) {
+      window.open(browserScreenshot.url, '_blank');
+    }
+  }
+
+  function handleRefreshPreview() {
+    if (!currentProject) return;
+    createTask(currentProject.id, 'Refresh the preview and take a new screenshot of the running application.');
+  }
+
+  function handleCopyClipboard() {
+    // Copy all terminal output or selected file to clipboard
+    const content = activeTab === 'terminal' ? terminalOutput : (files.find(f => f.path === selectedFile)?.content || '');
+    navigator.clipboard.writeText(content).then(() => {
+      setClipboardContent(content);
+      setActiveTab('clipboard' as any);
+    }).catch(() => {});
+  }
+
+  function handleBookmark() {
+    setBookmarked(!bookmarked);
   }
 
   /* ── Step status icon ── */
@@ -367,6 +466,27 @@ export function Workspace() {
   const completedSteps = steps.filter((s) => s.status === 'completed').length;
   const runningStep = steps.some((s) => s.status === 'running');
 
+  // Fullscreen preview mode
+  if (isFullscreen) {
+    return (
+      <div style={{ position: 'fixed', inset: 0, zIndex: 9999, backgroundColor: '#fff', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 16px', borderBottom: '1px solid #e8e5e0' }}>
+          <span style={{ fontSize: 14, fontWeight: 500, color: '#666' }}>Preview - {currentProject?.name || 'Project'}</span>
+          <button onClick={() => setIsFullscreen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#999', padding: 4 }}>
+            <X size={20} />
+          </button>
+        </div>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f5f3ef' }}>
+          {browserScreenshot ? (
+            <img src={`data:image/png;base64,${browserScreenshot.imageBase64}`} alt="Preview" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+          ) : (
+            <p style={{ color: '#999' }}>No preview available yet</p>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       style={{
@@ -376,6 +496,15 @@ export function Workspace() {
         fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
       }}
     >
+      {/* Hidden file input for attach */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        style={{ display: 'none' }}
+        onChange={handleFileUpload}
+        accept=".txt,.js,.ts,.jsx,.tsx,.json,.css,.html,.py,.md,.csv,.xml,.yaml,.yml,.env,.sh"
+      />
+
       {/* ── Modals ── */}
       <SearchModal isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
       <NewProjectModal
@@ -425,11 +554,25 @@ export function Workspace() {
             </span>
             <ChevronDown size={14} color="#999" style={{ cursor: 'pointer' }} />
             <div style={{ width: 1, height: 16, backgroundColor: '#e8e5e0', margin: '0 4px' }} />
-            {[Sparkles, Share2, Users, Bookmark, MoreHorizontal].map((Icon, i) => (
-              <button key={i} style={headerIconStyle}>
-                <Icon size={15} />
-              </button>
-            ))}
+            <button style={headerIconStyle} title="AI Assistant" onClick={() => textareaRef.current?.focus()}>
+              <Sparkles size={15} />
+            </button>
+            <button style={headerIconStyle} title="Share" onClick={handleShare}>
+              <Share2 size={15} />
+            </button>
+            <button style={headerIconStyle} title="Collaborators" onClick={handleShare}>
+              <Users size={15} />
+            </button>
+            <button
+              style={{ ...headerIconStyle, color: bookmarked ? '#f59e0b' : '#999' }}
+              title="Bookmark"
+              onClick={handleBookmark}
+            >
+              <Bookmark size={15} fill={bookmarked ? '#f59e0b' : 'none'} />
+            </button>
+            <button style={headerIconStyle} title="More options" onClick={() => setSettingsOpen(true)}>
+              <MoreHorizontal size={15} />
+            </button>
             {isExecuting && (
               <span
                 style={{
@@ -469,7 +612,12 @@ export function Workspace() {
                 <button
                   key={tab.id}
                   onClick={() => {
-                    if (tab.id !== 'clipboard') setActiveTab(tab.id as any);
+                    if (tab.id === 'clipboard') {
+                      // Copy current content to clipboard and switch to clipboard view
+                      handleCopyClipboard();
+                    } else {
+                      setActiveTab(tab.id as any);
+                    }
                   }}
                   style={{
                     display: 'flex',
@@ -493,17 +641,18 @@ export function Workspace() {
                 </button>
               );
             })}
-            <button style={{ ...headerIconStyle, padding: '5px 6px' }}>
+            <button style={{ ...headerIconStyle, padding: '5px 6px' }} onClick={() => setSettingsOpen(true)}>
               <MoreHorizontal size={13} />
             </button>
           </div>
 
           {/* Right: actions */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <button style={headerIconStyle} title="GitHub">
+            <button style={headerIconStyle} title="GitHub" onClick={handleGithubHeader}>
               <Github size={16} />
             </button>
             <button
+              onClick={handleShare}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -523,6 +672,7 @@ export function Workspace() {
               Share
             </button>
             <button
+              onClick={handlePublish}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -541,7 +691,7 @@ export function Workspace() {
               <Upload size={13} />
               Publish
             </button>
-            <button style={headerIconStyle} title="Close">
+            <button style={headerIconStyle} title="Close" onClick={handleClose}>
               <X size={16} />
             </button>
           </div>
@@ -593,7 +743,7 @@ export function Workspace() {
                 }}
               >
                 <Loader2 size={13} color="#d97706" style={{ animation: 'spin 2s linear infinite' }} />
-                Masidy will continue working after your response
+                {pauseQuestion || 'Masidy will continue working after your response'}
               </div>
             )}
 
@@ -659,13 +809,13 @@ export function Workspace() {
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <button style={inputIconStyle} title="Attach">
+                    <button style={inputIconStyle} title="Attach file" onClick={handleAttach}>
                       <Plus size={16} />
                     </button>
-                    <button style={inputIconStyle} title="GitHub">
+                    <button style={inputIconStyle} title="GitHub" onClick={handleGithubInput}>
                       <Github size={16} />
                     </button>
-                    <button style={inputIconStyle} title="Connectors">
+                    <button style={inputIconStyle} title="Connectors & Settings" onClick={handleConnectors}>
                       <Link2 size={16} />
                     </button>
                   </div>
@@ -693,7 +843,7 @@ export function Workspace() {
                         Stop
                       </button>
                     )}
-                    <button style={inputIconStyle} title="Voice">
+                    <button style={inputIconStyle} title="Voice input" onClick={handleVoice}>
                       <Mic size={16} />
                     </button>
                     <button
@@ -785,7 +935,7 @@ export function Workspace() {
                 </div>
 
                 {/* Home icon */}
-                <button style={previewToolbarBtnStyle}>
+                <button style={previewToolbarBtnStyle} title="Home" onClick={() => setPreviewUrl('/')}>
                   <Globe size={14} />
                 </button>
 
@@ -803,20 +953,33 @@ export function Workspace() {
                     minWidth: 100,
                   }}
                 >
-                  /
+                  {browserScreenshot?.url || previewUrl}
                 </div>
 
-                {/* Refresh buttons */}
-                <button style={previewToolbarBtnStyle} title="Open externally">
+                {/* Action buttons */}
+                <button style={previewToolbarBtnStyle} title="Open in new tab" onClick={handleExternalLink}>
                   <ExternalLink size={14} />
                 </button>
-                <button style={previewToolbarBtnStyle} title="Refresh">
+                <button style={previewToolbarBtnStyle} title="Refresh preview" onClick={handleRefreshPreview}>
                   <RefreshCw size={14} />
                 </button>
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <button
+                  onClick={() => {
+                    // Download all project files
+                    if (files.length > 0) {
+                      const allContent = files.map(f => `// === ${f.path} ===\n${f.content}`).join('\n\n');
+                      const blob = new Blob([allContent], { type: 'text/plain' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `${currentProject?.name || 'project'}-files.txt`;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    }
+                  }}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -832,10 +995,10 @@ export function Workspace() {
                     fontFamily: 'inherit',
                   }}
                 >
-                  <Pencil size={12} />
-                  Edit
+                  <Download size={12} />
+                  Export
                 </button>
-                <button style={previewToolbarBtnStyle} title="Fullscreen">
+                <button style={previewToolbarBtnStyle} title="Fullscreen" onClick={() => setIsFullscreen(true)}>
                   <Maximize2 size={14} />
                 </button>
               </div>
@@ -910,8 +1073,7 @@ export function Workspace() {
                         Loading preview, please wait...
                       </p>
                       <p style={{ fontSize: 12, color: '#bbb' }}>
-                        <a href="#" style={{ color: '#3b82f6', textDecoration: 'underline' }}>Download the app</a>
-                        {' '}and get notified when ready.
+                        Send a message to start building your project.
                       </p>
                     </div>
                   )}
@@ -1066,6 +1228,78 @@ export function Workspace() {
                           <span style={{ fontSize: 11, color: '#bbb' }}>{f.language || ''}</span>
                         </button>
                       ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Clipboard tab */}
+              {(activeTab as string) === 'clipboard' && (
+                <div
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    backgroundColor: '#fff',
+                    overflow: 'auto',
+                    padding: 16,
+                  }}
+                >
+                  {clipboardContent ? (
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                        <span style={{ fontSize: 13, fontWeight: 500, color: '#666' }}>Clipboard Content</span>
+                        <button
+                          onClick={() => navigator.clipboard.writeText(clipboardContent)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 4,
+                            padding: '4px 10px',
+                            fontSize: 12,
+                            color: '#555',
+                            backgroundColor: '#f5f3ef',
+                            border: '1px solid #e0ddd8',
+                            borderRadius: 6,
+                            cursor: 'pointer',
+                            fontFamily: 'inherit',
+                          }}
+                        >
+                          <Copy size={12} />
+                          Copy
+                        </button>
+                      </div>
+                      <pre
+                        style={{
+                          padding: 12,
+                          margin: 0,
+                          fontSize: 12,
+                          lineHeight: 1.6,
+                          fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+                          whiteSpace: 'pre-wrap',
+                          wordBreak: 'break-word',
+                          backgroundColor: '#f8f6f3',
+                          borderRadius: 8,
+                          border: '1px solid #e8e5e0',
+                          color: '#333',
+                        }}
+                      >
+                        {clipboardContent}
+                      </pre>
+                    </div>
+                  ) : (
+                    <div
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        height: '100%',
+                        color: '#999',
+                      }}
+                    >
+                      <Copy size={32} color="#ccc" />
+                      <p style={{ fontSize: 14, marginTop: 12 }}>Clipboard is empty</p>
+                      <p style={{ fontSize: 12, color: '#bbb' }}>Copied content will appear here</p>
                     </div>
                   )}
                 </div>

@@ -119,6 +119,19 @@ router.get('/api/tasks/:id', async (req, res) => {
   }
 });
 
+// List all recent tasks (for sidebar)
+router.get('/api/tasks', async (_req, res) => {
+  try {
+    const result = await db.query.tasks.findMany({
+      orderBy: [desc(tasks.createdAt)],
+      limit: 20,
+    });
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // List steps for a task
 router.get('/api/tasks/:id/steps', async (req, res) => {
   try {

@@ -65,8 +65,8 @@ interface AgentState {
   setPaused: (paused: boolean, question?: string | null) => void;
 
   // Active right panel tab
-  activeTab: 'browser' | 'code' | 'terminal' | 'files';
-  setActiveTab: (tab: 'browser' | 'code' | 'terminal' | 'files') => void;
+  activeTab: 'browser' | 'code' | 'terminal' | 'files' | 'clipboard';
+  setActiveTab: (tab: 'browser' | 'code' | 'terminal' | 'files' | 'clipboard') => void;
 
   // Reset
   reset: () => void;

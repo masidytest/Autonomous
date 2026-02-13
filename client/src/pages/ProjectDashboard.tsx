@@ -101,14 +101,34 @@ export function ProjectDashboard() {
 
   function handleQuickAction(label: string) {
     const prompts: Record<string, string> = {
-      'Build website': 'Build a modern website with ',
-      'Build app': 'Build a full-stack application with ',
-      'Create API': 'Create a REST API with ',
-      'Design UI': 'Design a beautiful UI for ',
+      'Build website': 'Build a modern responsive website',
+      'Build app': 'Build a full-stack web application',
+      'Create API': 'Create a REST API with authentication',
+      'Design UI': 'Design a beautiful modern UI',
       Other: '',
     };
-    setPrompt(prompts[label] ?? '');
-    textareaRef.current?.focus();
+    const selectedPrompt = prompts[label] ?? '';
+    if (selectedPrompt) {
+      setPrompt(selectedPrompt);
+      // Auto-submit for predefined quick actions
+      setTimeout(async () => {
+        if (creating) return;
+        setCreating(true);
+        try {
+          const name = selectedPrompt.slice(0, 50) || 'New Project';
+          const project = await createProject({ name, description: selectedPrompt });
+          navigate(`/project/${project.id}`, {
+            state: { initialPrompt: selectedPrompt },
+          });
+        } catch (err) {
+          console.error('Failed to create project:', err);
+        } finally {
+          setCreating(false);
+        }
+      }, 100);
+    } else {
+      textareaRef.current?.focus();
+    }
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {

@@ -46,7 +46,20 @@ export async function deleteProject(id: string): Promise<void> {
   await request(`/projects/${id}`, { method: 'DELETE' });
 }
 
-export async function fetchTasks(projectId: string) {
+export interface TaskData {
+  id: string;
+  projectId: string;
+  prompt: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function fetchAllTasks(): Promise<TaskData[]> {
+  return request('/tasks');
+}
+
+export async function fetchTasks(projectId: string): Promise<TaskData[]> {
   return request(`/projects/${projectId}/tasks`);
 }
 

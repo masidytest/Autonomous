@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Plus,
@@ -14,19 +14,10 @@ import {
   ArrowRight,
   Pencil,
   SlidersHorizontal,
+  Code2,
+  MessageSquare,
 } from 'lucide-react';
-
-const sidebarProjects = [
-  { id: '1', name: 'masidy-web', emoji: '🌐' },
-  { id: '2', name: 'api-service', emoji: '⚡' },
-  { id: '3', name: 'mobile-app', emoji: '📱' },
-];
-
-const recentTasks = [
-  { id: '1', title: 'Build landing page with hero section', time: '2 hours ago', icon: Pencil },
-  { id: '2', title: 'Can you build a full-stack app...', time: '5 hours ago', icon: Bot },
-  { id: '3', title: 'How to Create an App Like...', time: 'Yesterday', icon: Settings },
-];
+import { fetchProjects, fetchAllTasks, type ProjectData, type TaskData } from '../lib/api';
 
 interface SidebarProps {
   activePage?: 'dashboard' | 'agents' | 'search' | 'library';
@@ -38,18 +29,24 @@ interface SidebarProps {
 
 export function Sidebar({ activePage = 'dashboard', onSearchClick, onNewProject, onInviteClick, onSettingsClick }: SidebarProps) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [projectsOpen, setProjectsOpen] = useState(true);
   const [tasksOpen, setTasksOpen] = useState(true);
   const [collapsed, setCollapsed] = useState(false);
+  const [projects, setProjects] = useState<ProjectData[]>([]);
+  const [tasks, setTasks] = useState<TaskData[]>([]);
 
   const sidebarWidth = collapsed ? 64 : 280;
 
-  const navItems = [
-    { icon: Pencil, label: 'New task', route: '/dashboard', id: 'dashboard' as const, isButton: true },
-    { icon: Bot, label: 'Agents', route: '/agents', id: 'agents' as const, badge: 'New' },
-    { icon: Search, label: 'Search', route: '/dashboard', id: 'search' as const },
-    { icon: BookOpen, label: 'Library', route: '/dashboard', id: 'library' as const },
-  ];
+  // Fetch real projects and tasks from API
+  useEffect(() => {
+    fetchProjects()
+      .then((data) => setProjects(data.slice(0, 10)))
+      .catch(() => {});
+    fetchAllTasks()
+      .then((data) => setTasks(data.slice(0, 10)))
+      .catch(() => {});
+  }, [location.pathname]); // Refetch when navigating
 
   return (
     <aside
@@ -312,31 +309,55 @@ export function Sidebar({ activePage = 'dashboard', onSearchClick, onNewProject,
                 <Plus size={14} />
                 <span>New project</span>
               </button>
-              {sidebarProjects.map((proj) => (
-                <button
-                  key={proj.id}
-                  style={{
-                    width: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    padding: '6px 8px',
-                    fontSize: 13,
-                    color: '#555',
-                    backgroundColor: 'transparent',
-                    border: 'none',
-                    borderRadius: 6,
-                    cursor: 'pointer',
-                    fontFamily: 'inherit',
-                    transition: 'background-color 0.1s',
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f0ede8')}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-                >
-                  <span style={{ fontSize: 14 }}>{proj.emoji}</span>
-                  <span>{proj.name}</span>
-                </button>
-              ))}
+              {projects.length === 0 && (
+                <div style={{ padding: '8px 8px', fontSize: 12, color: '#bbb' }}>
+                  No projects yet
+                </div>
+              )}
+              {projects.map((proj) => {
+                const isActive = location.pathname === `/project/${proj.id}`;
+                return (
+                  <button
+                    key={proj.id}
+                    onClick={() => navigate(`/project/${proj.id}`)}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      padding: '6px 8px',
+                      fontSize: 13,
+                      color: isActive ? '#1a1a1a' : '#555',
+                      backgroundColor: isActive ? '#f0ede8' : 'transparent',
+                      border: 'none',
+                      borderRadius: 6,
+                      cursor: 'pointer',
+                      fontFamily: 'inherit',
+                      transition: 'background-color 0.1s',
+                      fontWeight: isActive ? 500 : 400,
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isActive) e.currentTarget.style.backgroundColor = '#f0ede8';
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isActive) e.currentTarget.style.backgroundColor = 'transparent';
+                    }}
+                  >
+                    <Code2 size={14} color="#999" />
+                    <span
+                      style={{
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        flex: 1,
+                        textAlign: 'left',
+                      }}
+                    >
+                      {proj.name}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
@@ -373,44 +394,47 @@ export function Sidebar({ activePage = 'dashboard', onSearchClick, onNewProject,
           </button>
           {tasksOpen && (
             <div style={{ marginTop: 4 }}>
-              {recentTasks.map((task) => {
-                const Icon = task.icon;
-                return (
-                  <button
-                    key={task.id}
+              {tasks.length === 0 && (
+                <div style={{ padding: '8px 8px', fontSize: 12, color: '#bbb' }}>
+                  No tasks yet
+                </div>
+              )}
+              {tasks.map((task) => (
+                <button
+                  key={task.id}
+                  onClick={() => navigate(`/project/${task.projectId}`)}
+                  style={{
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    padding: '7px 8px',
+                    fontSize: 13,
+                    color: '#555',
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    borderRadius: 6,
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                    transition: 'background-color 0.1s',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f0ede8')}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                >
+                  <MessageSquare size={14} color="#bbb" />
+                  <span
                     style={{
-                      width: '100%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 8,
-                      padding: '7px 8px',
-                      fontSize: 13,
-                      color: '#555',
-                      backgroundColor: 'transparent',
-                      border: 'none',
-                      borderRadius: 6,
-                      cursor: 'pointer',
-                      fontFamily: 'inherit',
-                      transition: 'background-color 0.1s',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      flex: 1,
+                      textAlign: 'left',
                     }}
-                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f0ede8')}
-                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                   >
-                    <Icon size={14} color="#bbb" />
-                    <span
-                      style={{
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                        flex: 1,
-                        textAlign: 'left',
-                      }}
-                    >
-                      {task.title}
-                    </span>
-                  </button>
-                );
-              })}
+                    {task.prompt.slice(0, 60)}
+                  </span>
+                </button>
+              ))}
             </div>
           )}
         </div>
@@ -470,10 +494,10 @@ export function Sidebar({ activePage = 'dashboard', onSearchClick, onNewProject,
         </button>
         {!collapsed && (
           <>
-            <button style={bottomIconStyle}>
+            <button style={bottomIconStyle} onClick={() => navigate('/agents')}>
               <Grid3X3 size={16} />
             </button>
-            <button style={bottomIconStyle}>
+            <button style={bottomIconStyle} onClick={() => navigate('/docs')}>
               <Smartphone size={16} />
             </button>
           </>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ChevronDown,
@@ -37,6 +37,8 @@ export function Dashboard() {
   const [projectModalOpen, setProjectModalOpen] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   /* Ctrl+K / Cmd+K to open search */
   useEffect(() => {
@@ -50,13 +52,14 @@ export function Dashboard() {
     return () => window.removeEventListener('keydown', handleGlobalKey);
   }, []);
 
-  async function handleSend() {
-    if (!prompt.trim() || creating) return;
+  async function handleSend(text?: string) {
+    const finalPrompt = (text || prompt).trim();
+    if (!finalPrompt || creating) return;
     setCreating(true);
     try {
-      const name = prompt.trim().slice(0, 50) || 'New Project';
-      const project = await createProject({ name, description: prompt.trim() });
-      navigate(`/project/${project.id}`, { state: { initialPrompt: prompt.trim() } });
+      const name = finalPrompt.slice(0, 50) || 'New Project';
+      const project = await createProject({ name, description: finalPrompt });
+      navigate(`/project/${project.id}`, { state: { initialPrompt: finalPrompt } });
     } catch (err) {
       console.error('Failed to create project:', err);
     } finally {
@@ -82,6 +85,60 @@ export function Dashboard() {
     }
   }
 
+  function handleChipClick(chip: string) {
+    setPrompt(chip);
+    // Auto-submit after a brief delay so the user sees the chip fill in
+    setTimeout(() => handleSend(chip), 100);
+  }
+
+  function handleAttachFile() {
+    fileInputRef.current?.click();
+  }
+
+  function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const content = reader.result as string;
+      setPrompt((prev) =>
+        prev + (prev ? '\n' : '') + `[Attached: ${file.name}]\n\`\`\`\n${content.slice(0, 5000)}\n\`\`\``
+      );
+      textareaRef.current?.focus();
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  }
+
+  function handleGithubClick() {
+    setPrompt((prev) => prev + (prev ? ' ' : '') + 'Clone my GitHub repository and help me with ');
+    textareaRef.current?.focus();
+  }
+
+  function handleShareClick() {
+    setInviteOpen(true);
+  }
+
+  function handleFilesClick() {
+    fileInputRef.current?.click();
+  }
+
+  function handleVoice() {
+    if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+      alert('Speech recognition is not supported in this browser.');
+      return;
+    }
+    const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-US';
+    recognition.interimResults = false;
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setPrompt((prev) => prev + (prev ? ' ' : '') + transcript);
+    };
+    recognition.start();
+  }
+
   return (
     <div
       style={{
@@ -91,6 +148,15 @@ export function Dashboard() {
         fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
       }}
     >
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        style={{ display: 'none' }}
+        onChange={handleFileUpload}
+        accept=".txt,.js,.ts,.jsx,.tsx,.json,.css,.html,.py,.md,.csv,.xml,.yaml,.yml,.env,.sh"
+      />
+
       {/* Modals */}
       <SearchModal isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
       <NewProjectModal
@@ -145,6 +211,7 @@ export function Dashboard() {
               cursor: 'pointer',
               fontFamily: 'inherit',
             }}
+            onClick={() => setSettingsOpen(true)}
           >
             <Sparkles size={14} color="#8b5cf6" />
             <span>Claude Opus</span>
@@ -153,6 +220,7 @@ export function Dashboard() {
 
           {/* Notification bell */}
           <button
+            onClick={() => navigate('/library')}
             style={{
               position: 'relative',
               background: 'none',
@@ -194,6 +262,7 @@ export function Dashboard() {
 
           {/* Avatar */}
           <div
+            onClick={() => setSettingsOpen(true)}
             style={{
               width: 32,
               height: 32,
@@ -273,6 +342,7 @@ export function Dashboard() {
               }}
             >
               <textarea
+                ref={textareaRef}
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 onKeyDown={handleKeyDown}
@@ -303,30 +373,30 @@ export function Dashboard() {
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <button style={toolbarBtnStyle} title="Attach file">
+                  <button style={toolbarBtnStyle} title="Attach file" onClick={handleAttachFile}>
                     <Paperclip size={16} />
                   </button>
-                  <button style={toolbarBtnStyle} title="GitHub">
+                  <button style={toolbarBtnStyle} title="GitHub" onClick={handleGithubClick}>
                     <Github size={16} />
                   </button>
-                  <button style={toolbarBtnStyle} title="Share">
+                  <button style={toolbarBtnStyle} title="Share" onClick={handleShareClick}>
                     <Share2 size={16} />
                   </button>
-                  <button style={toolbarBtnStyle} title="Files">
+                  <button style={toolbarBtnStyle} title="Files" onClick={handleFilesClick}>
                     <FolderOpen size={16} />
                   </button>
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <button style={toolbarBtnStyle} title="Emoji">
+                  <button style={toolbarBtnStyle} title="Emoji" onClick={() => setPrompt((p) => p + ' ')}>
                     <Smile size={16} />
                   </button>
-                  <button style={toolbarBtnStyle} title="Voice">
+                  <button style={toolbarBtnStyle} title="Voice" onClick={handleVoice}>
                     <Mic size={16} />
                   </button>
                   <button
-                    onClick={handleSend}
-                    disabled={!prompt.trim()}
+                    onClick={() => handleSend()}
+                    disabled={!prompt.trim() || creating}
                     style={{
                       width: 32,
                       height: 32,
@@ -359,9 +429,18 @@ export function Dashboard() {
                 }}
               >
                 <span style={{ fontSize: 11, color: '#bbb', fontWeight: 500 }}>Integrations:</span>
-                {['GitHub', 'Vercel', 'Supabase', 'Stripe'].map((name) => (
+                {[
+                  { name: 'GitHub', action: () => handleGithubClick() },
+                  { name: 'Vercel', action: () => setPrompt((p) => p + (p ? ' ' : '') + 'Deploy to Vercel ') },
+                  { name: 'Supabase', action: () => setPrompt((p) => p + (p ? ' ' : '') + 'Use Supabase for ') },
+                  { name: 'Stripe', action: () => setPrompt((p) => p + (p ? ' ' : '') + 'Add Stripe payments for ') },
+                ].map((item) => (
                   <span
-                    key={name}
+                    key={item.name}
+                    onClick={() => {
+                      item.action();
+                      textareaRef.current?.focus();
+                    }}
                     style={{
                       fontSize: 11,
                       color: '#888',
@@ -372,7 +451,7 @@ export function Dashboard() {
                       cursor: 'pointer',
                     }}
                   >
-                    {name}
+                    {item.name}
                   </span>
                 ))}
               </div>
@@ -391,7 +470,8 @@ export function Dashboard() {
               {quickChips.map((chip) => (
                 <button
                   key={chip}
-                  onClick={() => setPrompt(chip)}
+                  onClick={() => handleChipClick(chip)}
+                  disabled={creating}
                   style={{
                     padding: '7px 14px',
                     fontSize: 13,
@@ -399,7 +479,7 @@ export function Dashboard() {
                     backgroundColor: '#fff',
                     border: '1px solid #e0ddd8',
                     borderRadius: 999,
-                    cursor: 'pointer',
+                    cursor: creating ? 'default' : 'pointer',
                     fontFamily: 'inherit',
                     transition: 'border-color 0.15s, color 0.15s',
                     whiteSpace: 'nowrap',
@@ -453,6 +533,7 @@ export function Dashboard() {
                 </div>
               </div>
               <button
+                onClick={() => navigate('/library')}
                 style={{
                   padding: '8px 18px',
                   fontSize: 13,
