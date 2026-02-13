@@ -115,13 +115,6 @@ export function ProjectDashboard() {
   async function handleSubmit() {
     if (!prompt.trim() || creating) return;
 
-    // Check auth — save prompt and redirect if not logged in
-    if (!isAuthenticated()) {
-      savePendingPrompt(prompt.trim());
-      navigate('/auth');
-      return;
-    }
-
     setCreating(true);
     try {
       const name = prompt.trim().slice(0, 50) || 'New Project';

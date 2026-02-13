@@ -57,13 +57,6 @@ export function Dashboard() {
     const finalPrompt = (text || prompt).trim();
     if (!finalPrompt || creating) return;
 
-    // Check auth — save prompt and redirect if not logged in
-    if (!isAuthenticated()) {
-      savePendingPrompt(finalPrompt);
-      navigate('/auth');
-      return;
-    }
-
     setCreating(true);
     try {
       const name = finalPrompt.slice(0, 50) || 'New Project';
