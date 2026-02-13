@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ChevronDown,
@@ -18,6 +18,7 @@ import { SearchModal } from '../components/SearchModal';
 import { NewProjectModal } from '../components/NewProjectModal';
 import { InviteModal } from '../components/InviteModal';
 import { SettingsModal } from '../components/SettingsModal';
+import { createProject } from '../lib/api';
 
 const quickChips = [
   'Create a landing page',
@@ -31,6 +32,7 @@ const quickChips = [
 export function Dashboard() {
   const navigate = useNavigate();
   const [prompt, setPrompt] = useState('');
+  const [creating, setCreating] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [projectModalOpen, setProjectModalOpen] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -48,9 +50,29 @@ export function Dashboard() {
     return () => window.removeEventListener('keydown', handleGlobalKey);
   }, []);
 
-  function handleSend() {
-    if (!prompt.trim()) return;
-    navigate('/', { state: { initialPrompt: prompt } });
+  async function handleSend() {
+    if (!prompt.trim() || creating) return;
+    setCreating(true);
+    try {
+      const name = prompt.trim().slice(0, 50) || 'New Project';
+      const project = await createProject({ name, description: prompt.trim() });
+      navigate(`/project/${project.id}`, { state: { initialPrompt: prompt.trim() } });
+    } catch (err) {
+      console.error('Failed to create project:', err);
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  async function handleNewProject(data: { name: string; description: string }) {
+    try {
+      const project = await createProject(data);
+      navigate(`/project/${project.id}`, {
+        state: data.description ? { initialPrompt: data.description } : undefined,
+      });
+    } catch (err) {
+      console.error('Failed to create project:', err);
+    }
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
@@ -74,7 +96,7 @@ export function Dashboard() {
       <NewProjectModal
         isOpen={projectModalOpen}
         onClose={() => setProjectModalOpen(false)}
-        onCreate={(data) => console.log('Create project:', data)}
+        onCreate={handleNewProject}
       />
       <InviteModal isOpen={inviteOpen} onClose={() => setInviteOpen(false)} />
       <SettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />

@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Sidebar } from '../components/Sidebar';
 import { SearchModal } from '../components/SearchModal';
 import { NewProjectModal } from '../components/NewProjectModal';
 import { InviteModal } from '../components/InviteModal';
 import { SettingsModal } from '../components/SettingsModal';
+import { createProject } from '../lib/api';
 import {
   Send,
   Monitor,
@@ -47,6 +49,7 @@ const floatingApps = [
 ];
 
 export function Agents() {
+  const navigate = useNavigate();
   const [searchOpen, setSearchOpen] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -77,7 +80,16 @@ export function Agents() {
       <NewProjectModal
         isOpen={projectModalOpen}
         onClose={() => setProjectModalOpen(false)}
-        onCreate={(data) => console.log('Create project:', data)}
+        onCreate={async (data) => {
+          try {
+            const project = await createProject(data);
+            navigate(`/project/${project.id}`, {
+              state: data.description ? { initialPrompt: data.description } : undefined,
+            });
+          } catch (err) {
+            console.error('Failed to create project:', err);
+          }
+        }}
       />
       <InviteModal isOpen={inviteOpen} onClose={() => setInviteOpen(false)} />
       <SettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
