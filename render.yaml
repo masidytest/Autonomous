@@ -1,6 +1,5 @@
 databases:
   - name: masidy-db
-    plan: free
     databaseName: masidy_agent
     user: masidy
 
@@ -9,7 +8,6 @@ services:
   - type: web
     name: masidy-agent-api
     runtime: node
-    plan: free
     buildCommand: npm install && cd server && npm install && npm run build && npx drizzle-kit push
     startCommand: cd server && node dist/index.js
     healthCheckPath: /api/health
@@ -49,7 +47,6 @@ services:
   - type: web
     name: masidy-agent-web
     runtime: static
-    plan: free
     buildCommand: npm install && cd client && npm install && npm run build
     staticPublishPath: client/dist
     headers:
