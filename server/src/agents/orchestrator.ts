@@ -488,7 +488,7 @@ export class AgentOrchestrator {
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
         return await this.anthropic.messages.create({
-          model: 'claude-opus-4-6',
+          model: process.env.AI_MODEL || 'claude-opus-4-6',
           max_tokens: 16384,
           system: SYSTEM_PROMPT,
           tools: TOOL_DEFINITIONS,

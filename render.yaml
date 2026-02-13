@@ -25,6 +25,9 @@ services:
         sync: false
       - key: ANTHROPIC_API_KEY
         sync: false
+      # AI model: claude-sonnet-4-5-20250929 (default, faster) or claude-opus-4-6 (best quality)
+      - key: AI_MODEL
+        sync: false
       - key: JWT_SECRET
         generateValue: true
       - key: SESSION_SECRET
@@ -37,6 +40,8 @@ services:
       - key: GITHUB_CALLBACK_URL
         sync: false
       - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
       - key: SUPABASE_ANON_KEY
         sync: false

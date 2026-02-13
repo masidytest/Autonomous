@@ -4,6 +4,7 @@ import { AgentOrchestrator } from '../agents/orchestrator.js';
 import { db } from './database.js';
 import { projects } from '../../../shared/schema.js';
 import { eq } from 'drizzle-orm';
+import { v4 as uuidv4 } from 'uuid';
 
 const orchestrators = new Map<string, AgentOrchestrator>();
 
@@ -48,22 +49,34 @@ export function createSocketServer(httpServer: HttpServer): SocketServer {
       'task:create',
       async ({ projectId, prompt }: { projectId: string; prompt: string }) => {
         try {
-          // Get project slug
-          const project = await db.query.projects.findFirst({
+          // Get project (or auto-create if it doesn't exist yet)
+          let project = await db.query.projects.findFirst({
             where: eq(projects.id, projectId),
           });
 
           if (!project) {
-            socket.emit('error', { message: 'Project not found' });
-            return;
+            // Auto-create the project so the orchestrator can proceed
+            const slug = `project-${uuidv4().substring(0, 8)}`;
+            const name = prompt.slice(0, 50) || 'New Project';
+            try {
+              [project] = await db
+                .insert(projects)
+                .values({ name, slug, description: prompt })
+                .returning();
+              console.log(`[socket] Auto-created project ${project.id} for prompt`);
+            } catch (insertErr: any) {
+              console.error('Failed to auto-create project:', insertErr);
+              socket.emit('error', { message: 'Failed to create project' });
+              return;
+            }
           }
 
-          const orchestrator = new AgentOrchestrator(io, projectId, project.slug);
-          orchestrators.set(projectId, orchestrator);
+          const orchestrator = new AgentOrchestrator(io, project.id, project.slug);
+          orchestrators.set(project.id, orchestrator);
 
           // Execute in background (don't await)
           orchestrator.execute(prompt).catch((err) => {
-            console.error(`Task execution error for project ${projectId}:`, err);
+            console.error(`Task execution error for project ${project!.id}:`, err);
           });
         } catch (error: any) {
           console.error('Error creating task:', error);

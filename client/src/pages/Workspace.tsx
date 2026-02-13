@@ -97,8 +97,21 @@ export function Workspace() {
 
   useEffect(() => {
     if (!id) return;
-    fetchProject(id)
-      .then((project) => {
+    const state = location.state as { initialPrompt?: string } | null;
+
+    const initProject = async () => {
+      // Helper: once we have a valid project, join socket room + send initial prompt
+      const startAgent = (projectId: string, prompt?: string) => {
+        joinProject(projectId);
+        if (prompt && !initialPromptSent.current) {
+          initialPromptSent.current = true;
+          setTimeout(() => createTask(projectId, prompt), 500);
+        }
+      };
+
+      try {
+        // 1. Try fetching existing project from DB
+        const project = await fetchProject(id);
         setProject({
           id: project.id,
           name: project.name,
@@ -107,26 +120,39 @@ export function Workspace() {
           framework: project.framework,
           status: project.status,
         });
-        joinProject(project.id);
-
-        const state = location.state as { initialPrompt?: string } | null;
-        if (state?.initialPrompt && !initialPromptSent.current) {
-          initialPromptSent.current = true;
-          setTimeout(() => {
-            createTask(project.id, state.initialPrompt!);
-          }, 500);
+        startAgent(project.id, state?.initialPrompt);
+      } catch {
+        // 2. Project not found (temp UUID) — create it via API
+        try {
+          const name = state?.initialPrompt?.slice(0, 50) || 'New Project';
+          const newProject = await createProject({ name, description: state?.initialPrompt });
+          setProject({
+            id: newProject.id,
+            name: newProject.name,
+            slug: newProject.slug,
+            description: newProject.description,
+            framework: newProject.framework,
+            status: newProject.status,
+          });
+          startAgent(newProject.id, state?.initialPrompt);
+          // Replace URL with real project ID
+          navigate(`/project/${newProject.id}`, { replace: true, state });
+        } catch {
+          // 3. Backend unreachable — set local state, still try socket connection
+          setProject({
+            id: id,
+            name: 'Masidy 1.6 Lite',
+            slug: id,
+            description: 'Autonomous AI Agent',
+            framework: 'react',
+            status: 'active',
+          });
+          startAgent(id, state?.initialPrompt);
         }
-      })
-      .catch(() => {
-        setProject({
-          id: id,
-          name: 'Masidy 1.6 Lite',
-          slug: id,
-          description: 'Autonomous AI Agent',
-          framework: 'react',
-          status: 'active',
-        });
-      });
+      }
+    };
+
+    initProject();
 
     return () => {
       if (id) leaveProject(id);
