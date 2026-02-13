@@ -8,8 +8,8 @@ services:
   - type: web
     name: masidy-agent-api
     runtime: node
-    buildCommand: npm install && cd server && npm install && npm run build && npx drizzle-kit push
-    startCommand: cd server && node dist/index.js
+    buildCommand: npm install && cd server && npm install && cd .. && npx drizzle-kit push
+    startCommand: cd server && npx tsx src/index.ts
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
@@ -47,7 +47,7 @@ services:
   - type: web
     name: masidy-agent-web
     runtime: static
-    buildCommand: npm install && cd client && npm install && npm run build
+    buildCommand: npm install && cd client && npm install && npx vite build
     staticPublishPath: client/dist
     headers:
       - path: /*
