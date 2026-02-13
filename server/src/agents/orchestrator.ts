@@ -30,7 +30,8 @@ Rules:
 - Install dependencies before using them (npm install, pip install, etc.)
 - Ask the user if you need clarification on requirements
 - Use think tool when facing complex decisions
-- Create files in /workspace directory`;
+- Create files directly in /workspace (e.g. /workspace/index.html, /workspace/css/styles.css) — do NOT create a project subdirectory like /workspace/my-project/
+- Prefer using write_file over terminal commands for creating files and directories`;
 
 const TOOL_DEFINITIONS: Anthropic.Tool[] = [
   {

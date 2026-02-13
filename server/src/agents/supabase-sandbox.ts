@@ -135,11 +135,11 @@ export class SupabaseSandbox {
         cwd: this.tempDir,
         timeout,
         maxBuffer: 10 * 1024 * 1024,
-        shell: isWindows ? 'cmd.exe' : '/bin/bash',
+        shell: isWindows ? 'cmd.exe' : true,
         env: {
           ...process.env,
           PATH: process.env.PATH,
-          HOME: process.env.HOME || process.env.USERPROFILE,
+          HOME: process.env.HOME || process.env.USERPROFILE || '/tmp',
         },
       });
 
@@ -149,8 +149,11 @@ export class SupabaseSandbox {
         stderr: (stderr || '').trim(),
       };
     } catch (error: any) {
+      // child_process.exec error.code can be a string (e.g. 'ERR_CHILD_PROCESS_STDIO_MAXBUFFER')
+      const exitCode = typeof error.code === 'number' ? error.code : (error.status ?? 1);
+      console.error(`[SupabaseSandbox] exec error for "${cmd.substring(0, 80)}":`, error.message);
       result = {
-        exitCode: error.code ?? 1,
+        exitCode,
         stdout: (error.stdout || '').trim(),
         stderr: (error.stderr || error.message || '').trim(),
       };

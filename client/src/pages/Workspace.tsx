@@ -1097,6 +1097,13 @@ export function Workspace() {
                       alt="Browser preview"
                       style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                     />
+                  ) : deployUrl ? (
+                    <iframe
+                      src={deployUrl}
+                      title="Live preview"
+                      style={{ width: '100%', height: '100%', border: 'none' }}
+                      sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+                    />
                   ) : (
                     <div style={{ textAlign: 'center', padding: 40 }}>
                       {/* Skeleton card */}

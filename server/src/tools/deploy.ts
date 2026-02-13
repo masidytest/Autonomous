@@ -67,12 +67,40 @@ export class DeployTool {
         return { success: false, output: steps.join('\n'), error: 'No files found to deploy' };
       }
 
-      const vercelFiles = projectFiles
+      // Clean up file paths — strip /workspace/ prefix
+      let filePaths = projectFiles
         .filter(f => !f.isDirectory && f.content)
         .map(f => ({
-          file: f.path.replace(/^\/workspace\//, '').replace(/^\//, ''),
-          data: f.content || '',
+          cleanPath: f.path.replace(/^\/workspace\//, '').replace(/^\//, ''),
+          content: f.content || '',
         }));
+
+      // Detect common subdirectory prefix (e.g. "modern-website/") and strip it
+      // so Vercel serves index.html from the root
+      if (filePaths.length > 1) {
+        const parts = filePaths[0].cleanPath.split('/');
+        let commonPrefix = '';
+        for (let i = 0; i < parts.length - 1; i++) {
+          const candidate = parts.slice(0, i + 1).join('/') + '/';
+          if (filePaths.every(f => f.cleanPath.startsWith(candidate))) {
+            commonPrefix = candidate;
+          } else {
+            break;
+          }
+        }
+        if (commonPrefix) {
+          filePaths = filePaths.map(f => ({
+            ...f,
+            cleanPath: f.cleanPath.substring(commonPrefix.length),
+          }));
+          steps.push(`Stripped common prefix: ${commonPrefix}`);
+        }
+      }
+
+      const vercelFiles = filePaths.map(f => ({
+        file: f.cleanPath,
+        data: f.content,
+      }));
 
       const response = await fetch('https://api.vercel.com/v13/deployments', {
         method: 'POST',
