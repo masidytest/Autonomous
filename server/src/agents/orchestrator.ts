@@ -11,124 +11,71 @@ import { BrowserTool } from '../tools/browser.js';
 import { SearchTool } from '../tools/search.js';
 import { DeployTool } from '../tools/deploy.js';
 
-const MAX_ITERATIONS = 50;
+const MAX_ITERATIONS = 25;
 
-const SYSTEM_PROMPT = `You are Masidy Agent — an autonomous AI software engineer powered by Claude Opus 4.6 from Anthropic. You build beautiful, production-quality web applications from a single prompt.
+const SYSTEM_PROMPT = `You are Masidy Agent — an autonomous AI software engineer. You build web applications from a single prompt.
 
-## Who You Are
-You are powered by Claude Opus 4.6 — Anthropic's flagship AI model and the #1 ranked model on SWE-bench for real-world software engineering tasks.
-- **Most capable AI for coding**: Opus 4.6 outperforms GPT-4o, Gemini, and all other models on coding benchmarks
-- **Full autonomy**: You plan, write, test, debug, and deploy entire applications end-to-end
-- **10 integrated tools**: You directly control the filesystem, terminal, browser, web search, and deployment pipeline
+## CRITICAL RULES — FOLLOW EXACTLY
 
-When users ask about your capabilities or what model you use, proudly explain that you run on Claude Opus 4.6.
+### 1. STAY FOCUSED — ZERO DRIFTING
+- Build EXACTLY what the user asked for. If they say "crypto platform", you build a crypto platform — not a portfolio, not a todo app, not something else.
+- The project name, theme, colors, and category MUST match the user's request for the ENTIRE build.
+- Once you create a plan, EXECUTE it step by step without changing direction.
+- NEVER rename the project, switch themes, or change categories mid-build.
+- NEVER start over. NEVER rewrite files you already created from scratch.
 
-## Your Personality
-- Talk like a helpful friend, not a formal bot. Be warm, encouraging, and genuinely excited about what the user is building.
-- Proactively suggest improvements — don't just do what's asked.
-- When you finish a build, offer 2-3 specific ideas to enhance it.
-- Use brief, friendly messages. Celebrate milestones.
-- If something fails, be reassuring: "No worries, let me fix that real quick."
+### 2. WRITE EACH FILE ONCE — COMPLETE AND FINAL
+- Think and plan BEFORE writing any file. Know exactly what goes in each file.
+- Write index.html ONCE with all the HTML structure, styling, and content.
+- Write each CSS/JS file ONCE with complete, final content.
+- If you must update a file later, make SMALL targeted changes — never rewrite from scratch.
+- Target 3-6 files total per project. No more.
 
-## CRITICAL: How to Build Applications
+### 3. NO WASTED ACTIONS
+- NO browsing (the user sees your HTML live in the preview panel automatically).
+- NO dev servers (no python http.server, npm run dev, npx serve).
+- NO browsing localhost, 127.0.0.1, or file:// URLs.
+- NO terminal commands unless truly necessary (backend projects only).
+- NO reading files you just wrote — you already know the content.
 
-### For websites, landing pages, portfolios, dashboards, and most web apps:
-**ALWAYS build as STATIC HTML + CSS + JS files.** This is mandatory because:
-- The preview panel renders your HTML files directly in an iframe
-- Users see your work INSTANTLY as you write each file
-- No build step or server needed — it just works
+### 4. STATIC HTML + CDN ONLY
+Build as static HTML + CSS + JS using CDN libraries:
+- Files go directly in /workspace (e.g., /workspace/index.html). NO subdirectories like /workspace/my-project/.
+- index.html is ALWAYS the first file — it's what the preview displays.
 
-**Standard approach:**
-1. Create \`/workspace/index.html\` — the main entry point with ALL HTML structure
-2. Create \`/workspace/css/styles.css\` — all styling (or use inline styles / Tailwind CDN)
-3. Create \`/workspace/js/app.js\` — all interactivity (vanilla JS or Alpine.js CDN)
-4. Link CSS and JS files with relative paths in the HTML
+CDN libraries:
+- Tailwind: \`<script src="https://cdn.tailwindcss.com"></script>\`
+- React: \`<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>\` + ReactDOM + Babel
+- Vue: \`<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>\`
+- Chart.js: \`<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>\`
+- Three.js: \`<script src="https://unpkg.com/three@0.160/build/three.min.js"></script>\`
+- GSAP: \`<script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js"></script>\`
+- Lucide: \`<script src="https://unpkg.com/lucide@latest"></script>\`
+- Font Awesome: \`<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">\`
+- Google Fonts: \`<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">\`
+- Alpine.js: \`<script src="https://unpkg.com/alpinejs@3/dist/cdn.min.js" defer></script>\`
 
-**Use CDN libraries — NEVER npm install for frontend projects:**
-- **Tailwind CSS**: \`<script src="https://cdn.tailwindcss.com"></script>\`
-- **React + ReactDOM**: \`<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>\` + \`<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>\` + \`<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>\`
-- **Vue.js**: \`<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>\`
-- **Alpine.js**: \`<script src="https://unpkg.com/alpinejs@3/dist/cdn.min.js" defer></script>\`
-- **HTMX**: \`<script src="https://unpkg.com/htmx.org@1/dist/htmx.min.js"></script>\`
-- **Three.js**: \`<script src="https://unpkg.com/three@0.160/build/three.min.js"></script>\`
-- **Chart.js**: \`<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>\`
-- **Anime.js**: \`<script src="https://cdn.jsdelivr.net/npm/animejs@3/lib/anime.min.js"></script>\`
-- **GSAP**: \`<script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js"></script>\`
-- **Icons (Lucide)**: \`<script src="https://unpkg.com/lucide@latest"></script>\`
-- **Icons (Font Awesome)**: \`<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">\`
-- **Google Fonts**: \`<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">\`
-- **AOS Animations**: \`<link href="https://unpkg.com/aos@2/dist/aos.css" rel="stylesheet">\` + \`<script src="https://unpkg.com/aos@2/dist/aos.js"></script>\`
+### 5. EXACT WORKFLOW — NO DEVIATIONS
+1. **PLAN** — Create a plan with 3-6 steps that matches the user's request EXACTLY.
+2. **WRITE FILES** — Create index.html first (complete), then CSS, then JS. Each file written ONCE.
+3. **DONE** — Brief summary of what you built + 2-3 improvement ideas. Stop.
 
-### For React apps specifically:
-Use React via CDN with Babel standalone — NO npm/webpack/vite needed:
-\`\`\`html
-<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-<script type="text/babel">
-  function App() {
-    const [count, setCount] = React.useState(0);
-    return <div><h1>Count: {count}</h1><button onClick={() => setCount(c => c + 1)}>+</button></div>;
-  }
-  ReactDOM.createRoot(document.getElementById('root')).render(<App />);
-</script>
-\`\`\`
+Do NOT add extra steps. Do NOT go back and rewrite. Do NOT browse. Just plan, write, summarize.
 
-### When terminal commands ARE needed:
-- Only use \`run_command\` for: checking node/npm versions, running simple scripts, or installing dependencies for backend-only projects
-- If a command fails, DON'T retry the same command — adapt your approach (e.g., use CDN instead of npm)
-- Always prefer \`write_file\` over terminal for creating files
-
-### For backend / API projects (Express, Flask, etc.):
-- Write the server code with \`write_file\`
-- Use \`run_command\` for \`npm install\` (only when building a real backend)
-- Note: backend servers won't preview in the iframe — explain to the user they need to run it locally
-
-## Your Workflow
-1. PLAN — use the plan tool to create a clear execution plan
-2. EXECUTE — create files using write_file (prefer this over terminal)
-3. DEBUG — if errors occur, read error messages and fix issues
-4. SUMMARIZE — explain what you built and suggest 2-3 improvements
-
-**IMPORTANT: Do NOT use the browse tool to preview your work.** The user's preview panel automatically renders your HTML files in real-time as you write them. Never navigate to file:///workspace/*, localhost, or 127.0.0.1 — these URLs don't work in the sandbox. The browse tool is ONLY for fetching external websites for reference/research (e.g., browsing a public URL for design inspiration). Skip any "verify by browsing" step — the user already sees your output live.
-
-## Quality Standards
-- Build PREMIUM, modern UIs — clean typography, proper spacing, subtle animations, hover effects
-- Use modern CSS: flexbox/grid, smooth transitions, responsive design by default
-- Always add \`<meta name="viewport" content="width=device-width, initial-scale=1.0">\`
-- Include loading states, hover interactions, and micro-animations
-- Write clean, well-organized, production-ready code
-- Use semantic HTML and accessible markup
-
-## Free Resources to Use
-- **Fonts**: Google Fonts — Inter, DM Sans, Plus Jakarta Sans, Poppins, Space Grotesk
-- **Icons**: Lucide, Font Awesome, Heroicons via CDN
-- **Images**: Unsplash — \`https://images.unsplash.com/photo-{id}?w=800&auto=format\`
-- **Gradients**: Modern gradients — linear-gradient with 2-3 harmonious colors
-- **Animations**: CSS @keyframes, AOS library, or GSAP for advanced animations
-- **Color palettes**: Warm neutrals, indigo/violet accents, emerald greens
-
-## Rules
-- Always create a plan before starting implementation
-- Create files directly in /workspace (e.g. /workspace/index.html) — do NOT create subdirectories like /workspace/my-project/
-- **ALWAYS create index.html as the first file** — this is what the preview displays
-- Prefer using write_file over terminal commands for creating files
-- **NEVER start a dev server** (no \`python3 -m http.server\`, \`npm run dev\`, \`npx serve\`, etc.) — the preview panel handles rendering automatically
-- **NEVER use browse to preview your work** — no localhost, no file:// URLs. The user already sees it live.
-- Make everything responsive and mobile-friendly by default
-- Add subtle animations: fade-ins, slide-ups, scale transitions on hover
-- Use a consistent, professional color scheme throughout
-- When building HTML pages, always include favicon, proper meta tags, and Open Graph tags
-- Keep your responses concise — don't waste tokens on verbose explanations`;
+## Quality
+- Modern, premium UI with clean typography and good spacing
+- Responsive and mobile-friendly
+- Consistent color scheme matching the project theme
+- Proper meta tags and viewport`;
 
 const TOOL_DEFINITIONS: Anthropic.Tool[] = [
   {
     name: 'plan',
-    description: 'Create an execution plan for the task. Always call this first before implementing.',
+    description: 'Create an execution plan. MUST be called first. The plan must match the user request EXACTLY — same project type, name, and theme throughout.',
     input_schema: {
       type: 'object' as const,
       properties: {
-        goal: { type: 'string', description: 'The overall goal to achieve' },
+        goal: { type: 'string', description: 'The overall goal — must match the user request exactly' },
         steps: {
           type: 'array',
           items: {
@@ -151,19 +98,19 @@ const TOOL_DEFINITIONS: Anthropic.Tool[] = [
   },
   {
     name: 'write_file',
-    description: 'Write content to a file. Creates directories automatically. Path relative to /workspace. ALWAYS create index.html first for web projects.',
+    description: 'Write COMPLETE content to a file. Write each file ONCE with ALL its content. Do NOT rewrite files you already created. Create index.html first.',
     input_schema: {
       type: 'object' as const,
       properties: {
         path: { type: 'string', description: 'File path (relative to /workspace or absolute)' },
-        content: { type: 'string', description: 'File content to write' },
+        content: { type: 'string', description: 'COMPLETE file content — write everything in one go' },
       },
       required: ['path', 'content'],
     },
   },
   {
     name: 'read_file',
-    description: 'Read the contents of a file.',
+    description: 'Read a file. Only use this to read files you need to UPDATE — never read files you just wrote.',
     input_schema: {
       type: 'object' as const,
       properties: {
@@ -186,7 +133,7 @@ const TOOL_DEFINITIONS: Anthropic.Tool[] = [
   },
   {
     name: 'run_command',
-    description: 'Run a shell command in the sandbox. Commands run from /workspace directory. IMPORTANT: Only use for tasks that truly need terminal (npm install for backends, running scripts). For frontend web apps, use CDN libraries and write_file instead.',
+    description: 'Run a shell command. ONLY use for backend projects that truly need npm install. For frontend web apps, use CDN libraries and write_file instead. NEVER start dev servers.',
     input_schema: {
       type: 'object' as const,
       properties: {
@@ -198,7 +145,7 @@ const TOOL_DEFINITIONS: Anthropic.Tool[] = [
   },
   {
     name: 'search_web',
-    description: 'Search the web for information.',
+    description: 'Search the web for information. Use sparingly — only when you need specific technical info.',
     input_schema: {
       type: 'object' as const,
       properties: {
@@ -209,7 +156,7 @@ const TOOL_DEFINITIONS: Anthropic.Tool[] = [
   },
   {
     name: 'browse',
-    description: 'Browse an EXTERNAL public website for research. NEVER use for previewing your own work — the user sees your HTML live in the preview panel. NEVER navigate to localhost, 127.0.0.1, or file:// URLs.',
+    description: 'Browse an EXTERNAL public website for research ONLY. NEVER use for previewing your own work. NEVER navigate to localhost, 127.0.0.1, or file:// URLs. The preview panel shows your HTML automatically.',
     input_schema: {
       type: 'object' as const,
       properties: {
@@ -228,7 +175,7 @@ const TOOL_DEFINITIONS: Anthropic.Tool[] = [
   },
   {
     name: 'deploy',
-    description: 'Build and deploy the application to Vercel.',
+    description: 'Deploy the application to Vercel.',
     input_schema: {
       type: 'object' as const,
       properties: {
@@ -241,7 +188,7 @@ const TOOL_DEFINITIONS: Anthropic.Tool[] = [
   },
   {
     name: 'ask_user',
-    description: 'Ask the user a question and wait for their response. Use when you need clarification.',
+    description: 'Ask the user a question when you need clarification.',
     input_schema: {
       type: 'object' as const,
       properties: {
@@ -252,7 +199,7 @@ const TOOL_DEFINITIONS: Anthropic.Tool[] = [
   },
   {
     name: 'think',
-    description: 'Think step by step about a problem. Use for complex reasoning before acting.',
+    description: 'Think about your approach BEFORE writing code. Use this to plan file structure and content.',
     input_schema: {
       type: 'object' as const,
       properties: {
@@ -277,7 +224,7 @@ function detectProjectType(prompt: string): string {
   if (p.includes('game')) return 'game';
   if (p.includes('dashboard') || p.includes('admin')) return 'dashboard';
   if (p.includes('api') || p.includes('backend') || p.includes('server') || p.includes('express') || p.includes('flask')) return 'backend';
-  return 'static'; // Default: static HTML
+  return 'static';
 }
 
 function getTemplate(type: string): ProjectTemplate {
@@ -292,8 +239,7 @@ function getTemplate(type: string): ProjectTemplate {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>React App</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚛️</text></svg>">
+  <title>App</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -306,22 +252,6 @@ function getTemplate(type: string): ProjectTemplate {
   <script type="text/babel" src="js/app.jsx"></script>
 </body>
 </html>`,
-          },
-          {
-            path: '/workspace/js/app.jsx',
-            content: `function App() {
-  const [loaded, setLoaded] = React.useState(false);
-  React.useEffect(() => setLoaded(true), []);
-  return (
-    <div className={\`min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 transition-opacity duration-500 \${loaded ? 'opacity-100' : 'opacity-0'}\`}>
-      <div className="max-w-4xl mx-auto px-4 py-16">
-        <h1 className="text-4xl font-bold text-slate-900">Hello World</h1>
-        <p className="mt-4 text-lg text-slate-600">Your React app is ready. Start building!</p>
-      </div>
-    </div>
-  );
-}
-ReactDOM.createRoot(document.getElementById('root')).render(<App />);`,
           },
         ],
       };
@@ -337,7 +267,6 @@ ReactDOM.createRoot(document.getElementById('root')).render(<App />);`,
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -386,7 +315,6 @@ ReactDOM.createRoot(document.getElementById('root')).render(<App />);`,
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Game</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { background: #0a0a0a; display: flex; align-items: center; justify-content: center; min-height: 100vh; font-family: sans-serif; }
@@ -412,8 +340,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(<App />);`,
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Vue App</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💚</text></svg>">
+  <title>App</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -429,7 +356,6 @@ ReactDOM.createRoot(document.getElementById('root')).render(<App />);`,
       };
 
     case 'backend':
-      // Backend projects don't get a template — let Claude handle it
       return { files: [] };
 
     default: // static
@@ -442,30 +368,26 @@ ReactDOM.createRoot(document.getElementById('root')).render(<App />);`,
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My Website</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌐</text></svg>">
+  <title>Website</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
-  <link href="https://unpkg.com/aos@2/dist/aos.css" rel="stylesheet">
-  <script src="https://unpkg.com/aos@2/dist/aos.js"></script>
   <style>body { font-family: 'Inter', sans-serif; }</style>
 </head>
 <body class="bg-white text-slate-900">
   <div id="app"></div>
   <link rel="stylesheet" href="css/styles.css">
   <script src="js/app.js"></script>
-  <script>AOS.init({ duration: 800, once: true });</script>
 </body>
 </html>`,
           },
           {
             path: '/workspace/css/styles.css',
-            content: `/* Custom styles — Tailwind handles most styling via classes */\n`,
+            content: `/* Custom styles */\n`,
           },
           {
             path: '/workspace/js/app.js',
-            content: `// App logic\ndocument.addEventListener('DOMContentLoaded', () => {\n  lucide.createIcons();\n});\n`,
+            content: `// App logic\ndocument.addEventListener('DOMContentLoaded', () => {\n  if (window.lucide) lucide.createIcons();\n});\n`,
           },
         ],
       };
@@ -493,6 +415,7 @@ export class AgentOrchestrator {
   private startTime = 0;
   private totalTokens = 0;
   private activeSkills: { name: string; content: string }[] = [];
+  private writtenFiles: Set<string> = new Set(); // Track files already written
 
   constructor(io: SocketServer, projectId: string, projectSlug: string) {
     this.io = io;
@@ -522,7 +445,7 @@ export class AgentOrchestrator {
       .map((s) => `### ${s.name}\n${s.content}`)
       .join('\n\n');
 
-    return `${SYSTEM_PROMPT}\n\n## Active Skills (${this.activeSkills.length} enabled)\nThe following specialized skill sets are active. Use their knowledge and best practices when relevant:\n\n${skillsSection}`;
+    return `${SYSTEM_PROMPT}\n\n## Active Skills (${this.activeSkills.length} enabled)\n${skillsSection}`;
   }
 
   async execute(prompt: string): Promise<void> {
@@ -647,12 +570,24 @@ export class AgentOrchestrator {
         content: file.content,
         language,
       });
+
+      // Track that this file was scaffolded
+      this.writtenFiles.add(file.path);
     }
   }
 
   private async agentLoop(initialPrompt: string): Promise<void> {
+    // Inject the user's request as a focused context message
+    const focusedPrompt = `BUILD THIS: "${initialPrompt}"
+
+RULES FOR THIS BUILD:
+- Stay focused on EXACTLY this request. Do not change the project type, name, or theme.
+- Write each file ONCE with COMPLETE content. Do not rewrite files.
+- Follow your plan step by step. Do not deviate or add extra steps.
+- When done, summarize briefly and stop.`;
+
     const conversationMessages: Anthropic.MessageParam[] = [
-      { role: 'user', content: initialPrompt },
+      { role: 'user', content: focusedPrompt },
     ];
 
     // Save initial user message
@@ -794,14 +729,22 @@ export class AgentOrchestrator {
             }
 
             // Build tool result for Claude
-            const resultText = result.success
+            let resultText = result.success
               ? result.output
               : `Error: ${result.error}\n${result.output}`;
+
+            // If a file was rewritten, warn Claude
+            if (toolUse.name === 'write_file') {
+              const filePath = (toolUse.input as any).path;
+              if (this.writtenFiles.has(filePath)) {
+                resultText += `\n\n⚠️ WARNING: You rewrote "${filePath}" which was already written. Do NOT rewrite files again. Continue with your next step.`;
+              }
+            }
 
             toolResults.push({
               type: 'tool_result',
               tool_use_id: toolUse.id,
-              content: resultText.substring(0, 50000), // Limit size
+              content: resultText.substring(0, 50000),
             });
           } catch (error: any) {
             const duration = Date.now() - stepStart;
@@ -845,7 +788,7 @@ export class AgentOrchestrator {
       }
     }
 
-    throw new Error('Agent exceeded maximum iterations (50). Task may be too complex.');
+    throw new Error('Agent exceeded maximum iterations (25). Task may be too complex.');
   }
 
   private async callClaudeWithRetry(
@@ -855,7 +798,7 @@ export class AgentOrchestrator {
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
         return await this.anthropic.messages.create({
-          model: process.env.AI_MODEL || 'claude-opus-4-6',
+          model: process.env.AI_MODEL || 'claude-sonnet-4-5-20250929',
           max_tokens: 16384,
           system: this.buildSystemPrompt(),
           tools: TOOL_DEFINITIONS,
@@ -868,15 +811,14 @@ export class AgentOrchestrator {
         // Billing / credit errors — don't retry
         if (status === 400 && (msg.includes('credit balance') || msg.includes('billing'))) {
           throw new Error(
-            'Anthropic API credit balance is too low. Please check your API key and billing at console.anthropic.com. ' +
-            'Make sure the ANTHROPIC_API_KEY environment variable on your server matches a funded account.'
+            'Anthropic API credit balance is too low. Please check your API key and billing at console.anthropic.com.'
           );
         }
 
         // Invalid API key — don't retry
         if (status === 401) {
           throw new Error(
-            'Invalid Anthropic API key. Please verify your ANTHROPIC_API_KEY environment variable is correct and active at console.anthropic.com/settings/keys.'
+            'Invalid Anthropic API key. Please verify your ANTHROPIC_API_KEY environment variable.'
           );
         }
 
@@ -899,7 +841,7 @@ export class AgentOrchestrator {
         // Model not found
         if (status === 404) {
           throw new Error(
-            `AI model "${process.env.AI_MODEL || 'claude-opus-4-6'}" not found. Check the AI_MODEL environment variable.`
+            `AI model "${process.env.AI_MODEL || 'claude-sonnet-4-5-20250929'}" not found. Check the AI_MODEL environment variable.`
           );
         }
 
@@ -929,15 +871,25 @@ export class AgentOrchestrator {
         this.emit({ type: 'task:planning', taskId: this.taskId!, plan });
         return {
           success: true,
-          output: `Plan created with ${plan.steps.length} steps. Proceeding with execution.`,
+          output: `Plan created with ${plan.steps.length} steps. Now execute each step IN ORDER. Write each file ONCE with complete content. Do NOT deviate from this plan.`,
         };
       }
 
       case 'write_file': {
-        const result = await this.fsTool.writeFile(input.path, input.content);
+        const filePath = input.path as string;
+
+        // Track file writes
+        const isRewrite = this.writtenFiles.has(filePath);
+        this.writtenFiles.add(filePath);
+
+        if (isRewrite) {
+          console.log(`[Orchestrator] WARNING: File "${filePath}" being rewritten (was already written)`);
+        }
+
+        const result = await this.fsTool.writeFile(filePath, input.content);
         if (result.success) {
           // Detect language from extension
-          const ext = input.path.split('.').pop() || '';
+          const ext = filePath.split('.').pop() || '';
           const langMap: Record<string, string> = {
             ts: 'typescript', tsx: 'typescript', js: 'javascript', jsx: 'javascript',
             py: 'python', rs: 'rust', go: 'go', java: 'java',
@@ -950,7 +902,7 @@ export class AgentOrchestrator {
           this.emit({
             type: 'file:changed',
             projectId: this.projectId,
-            path: input.path,
+            path: filePath,
             content: input.content,
             language,
           });
@@ -959,7 +911,7 @@ export class AgentOrchestrator {
           if (this.taskId) {
             const existing = await db.query.files.findFirst({
               where: (f, { and, eq: e }) =>
-                and(e(f.projectId, this.projectId), e(f.path, input.path)),
+                and(e(f.projectId, this.projectId), e(f.path, filePath)),
             });
             if (existing) {
               await db
@@ -969,7 +921,7 @@ export class AgentOrchestrator {
             } else {
               await db.insert(filesTable).values({
                 projectId: this.projectId,
-                path: input.path,
+                path: filePath,
                 content: input.content,
                 language,
               });
@@ -1002,6 +954,16 @@ export class AgentOrchestrator {
       }
 
       case 'browse': {
+        // Block localhost/file browsing
+        const url = (input.url || '').toLowerCase();
+        if (url.includes('localhost') || url.includes('127.0.0.1') || url.startsWith('file://')) {
+          return {
+            success: false,
+            output: '',
+            error: 'Cannot browse localhost or file:// URLs. The preview panel shows your HTML automatically. Continue with your next step.',
+          };
+        }
+
         const result = await this.browserTool.execute(input as any);
         if (result.metadata?.screenshot) {
           this.emit({
@@ -1053,7 +1015,7 @@ export class AgentOrchestrator {
           taskId: this.taskId!,
           thought: input.thought,
         });
-        return { success: true, output: 'Thought recorded. Continue with the next action.' };
+        return { success: true, output: 'Continue with the next step in your plan.' };
       }
 
       default:
