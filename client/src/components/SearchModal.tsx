@@ -1,57 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Search,
   X,
   Plus,
-  Pencil,
-  Bot,
-  MessageCircle,
-  CheckCircle2,
-  Settings,
+  Code2,
+  MessageSquare,
 } from 'lucide-react';
-
-/* ── Mock task data ── */
-const recentTasks = [
-  {
-    id: '1',
-    title: 'Correcting Typographical Errors in Text',
-    preview: '## Unified AI Platform - Completed and Working. Fixed the routing bug that prevented the v',
-    date: 'Wednesday',
-    icon: Pencil,
-    iconColor: '#22c55e',
-    badge: null,
-  },
-  {
-    id: '2',
-    title: 'Can you build a full-stack app like v0 and Manus?',
-    preview: 'You\'re right. The truth is: - I can **generate UI** and **structures** - But I can\'t cre',
-    date: '',
-    icon: Bot,
-    iconColor: '#f59e0b',
-    badge: '2/6',
-  },
-];
-
-const olderTasks = [
-  {
-    id: '3',
-    title: 'How to Create an App Like OnlyFans Store',
-    preview: 'Successfully created **FanStore**, a complete mobile marketplace inspired by OnlyFans Store. L',
-    date: '1/31',
-    icon: MessageCircle,
-    iconColor: '#888',
-    badge: null,
-  },
-  {
-    id: '4',
-    title: 'Build REST API with Authentication',
-    preview: 'Created a fully functional REST API with JWT authentication, user registration, and protected routes.',
-    date: '1/28',
-    icon: Settings,
-    iconColor: '#888',
-    badge: null,
-  },
-];
+import { fetchProjects, fetchAllTasks, type ProjectData, type TaskData } from '../lib/api';
 
 interface SearchModalProps {
   isOpen: boolean;
@@ -60,21 +16,24 @@ interface SearchModalProps {
 
 export function SearchModal({ isOpen, onClose }: SearchModalProps) {
   const [query, setQuery] = useState('');
+  const [projects, setProjects] = useState<ProjectData[]>([]);
+  const [tasks, setTasks] = useState<TaskData[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (isOpen) {
       setQuery('');
       setTimeout(() => inputRef.current?.focus(), 50);
+      // Load real data
+      fetchProjects().then((p) => setProjects(p.slice(0, 10))).catch(() => {});
+      fetchAllTasks().then((t) => setTasks(t.slice(0, 10))).catch(() => {});
     }
   }, [isOpen]);
 
-  /* Close on Escape */
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
-      if (e.key === 'Escape' && isOpen) {
-        onClose();
-      }
+      if (e.key === 'Escape' && isOpen) onClose();
     }
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
@@ -82,14 +41,23 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
 
   if (!isOpen) return null;
 
-  /* Filter tasks by query */
   const q = query.toLowerCase();
-  const filteredRecent = recentTasks.filter(
-    (t) => t.title.toLowerCase().includes(q) || t.preview.toLowerCase().includes(q),
+  const filteredProjects = projects.filter(
+    (p) => p.name.toLowerCase().includes(q) || (p.description || '').toLowerCase().includes(q),
   );
-  const filteredOlder = olderTasks.filter(
-    (t) => t.title.toLowerCase().includes(q) || t.preview.toLowerCase().includes(q),
+  const filteredTasks = tasks.filter(
+    (t) => t.prompt.toLowerCase().includes(q),
   );
+
+  function handleNavigate(projectId: string) {
+    onClose();
+    navigate(`/project/${projectId}`);
+  }
+
+  function handleNewTask() {
+    onClose();
+    navigate('/dashboard');
+  }
 
   return (
     <>
@@ -142,7 +110,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search tasks..."
+            placeholder="Search projects and tasks..."
             style={{
               flex: 1,
               border: 'none',
@@ -176,6 +144,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
         <div style={{ overflow: 'auto', flex: 1 }}>
           {/* New task shortcut */}
           <button
+            onClick={handleNewTask}
             style={{
               width: '100%',
               display: 'flex',
@@ -210,55 +179,114 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
             </span>
           </button>
 
-          {/* Last 7 days */}
-          {filteredRecent.length > 0 && (
+          {/* Projects */}
+          {filteredProjects.length > 0 && (
             <>
-              <div
-                style={{
-                  padding: '10px 20px 6px',
-                  fontSize: 12,
-                  fontWeight: 500,
-                  color: '#aaa',
-                }}
-              >
-                Last 7 days
+              <div style={{ padding: '10px 20px 6px', fontSize: 12, fontWeight: 500, color: '#aaa' }}>
+                Projects
               </div>
-              {filteredRecent.map((task) => (
-                <TaskRow key={task.id} task={task} />
+              {filteredProjects.map((project) => (
+                <button
+                  key={project.id}
+                  onClick={() => handleNavigate(project.id)}
+                  style={{
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12,
+                    padding: '10px 20px',
+                    border: 'none',
+                    backgroundColor: 'transparent',
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                    textAlign: 'left',
+                    transition: 'background-color 0.1s',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#faf9f7')}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                >
+                  <div style={{
+                    width: 36, height: 36, borderRadius: 10,
+                    backgroundColor: '#f8f6f3', border: '1px solid #eae7e2',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                  }}>
+                    <Code2 size={16} color="#888" />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 14, fontWeight: 500, color: '#1a1a1a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {project.name}
+                    </div>
+                    {project.description && (
+                      <p style={{ fontSize: 12, color: '#999', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 2 }}>
+                        {project.description}
+                      </p>
+                    )}
+                  </div>
+                  <span style={{ fontSize: 12, color: '#bbb', flexShrink: 0 }}>
+                    {new Date(project.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  </span>
+                </button>
               ))}
             </>
           )}
 
-          {/* Last 30 days */}
-          {filteredOlder.length > 0 && (
+          {/* Tasks */}
+          {filteredTasks.length > 0 && (
             <>
-              <div
-                style={{
-                  padding: '10px 20px 6px',
-                  fontSize: 12,
-                  fontWeight: 500,
-                  color: '#aaa',
-                }}
-              >
-                Last 30 days
+              <div style={{ padding: '10px 20px 6px', fontSize: 12, fontWeight: 500, color: '#aaa' }}>
+                Tasks
               </div>
-              {filteredOlder.map((task) => (
-                <TaskRow key={task.id} task={task} />
+              {filteredTasks.map((task) => (
+                <button
+                  key={task.id}
+                  onClick={() => handleNavigate(task.projectId)}
+                  style={{
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12,
+                    padding: '10px 20px',
+                    border: 'none',
+                    backgroundColor: 'transparent',
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                    textAlign: 'left',
+                    transition: 'background-color 0.1s',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#faf9f7')}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                >
+                  <div style={{
+                    width: 36, height: 36, borderRadius: 10,
+                    backgroundColor: '#f8f6f3', border: '1px solid #eae7e2',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                  }}>
+                    <MessageSquare size={16} color="#888" />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 14, fontWeight: 500, color: '#1a1a1a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {task.prompt.slice(0, 80)}
+                    </div>
+                    <div style={{ fontSize: 12, color: '#999', marginTop: 2 }}>
+                      {task.status === 'completed' ? 'Completed' : task.status === 'running' ? 'Running' : 'Pending'}
+                    </div>
+                  </div>
+                </button>
               ))}
             </>
           )}
 
           {/* No results */}
-          {filteredRecent.length === 0 && filteredOlder.length === 0 && query && (
-            <div
-              style={{
-                padding: '32px 20px',
-                textAlign: 'center',
-                color: '#999',
-                fontSize: 14,
-              }}
-            >
-              No tasks found for "{query}"
+          {filteredProjects.length === 0 && filteredTasks.length === 0 && query && (
+            <div style={{ padding: '32px 20px', textAlign: 'center', color: '#999', fontSize: 14 }}>
+              No results found for "{query}"
+            </div>
+          )}
+
+          {/* Empty state when no data */}
+          {projects.length === 0 && tasks.length === 0 && !query && (
+            <div style={{ padding: '32px 20px', textAlign: 'center', color: '#999', fontSize: 14 }}>
+              No projects yet. Create your first task to get started.
             </div>
           )}
         </div>
@@ -291,7 +319,6 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
         </div>
       </div>
 
-      {/* Animations */}
       <style>{`
         @keyframes fadeInBackdrop {
           from { opacity: 0; }
@@ -306,117 +333,6 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
   );
 }
 
-/* ── Task row component ── */
-function TaskRow({
-  task,
-}: {
-  task: {
-    id: string;
-    title: string;
-    preview: string;
-    date: string;
-    icon: React.ComponentType<{ size?: number; color?: string }>;
-    iconColor: string;
-    badge: string | null;
-  };
-}) {
-  const Icon = task.icon;
-  return (
-    <button
-      style={{
-        width: '100%',
-        display: 'flex',
-        alignItems: 'flex-start',
-        gap: 12,
-        padding: '10px 20px',
-        border: 'none',
-        backgroundColor: 'transparent',
-        cursor: 'pointer',
-        fontFamily: 'inherit',
-        textAlign: 'left',
-        transition: 'background-color 0.1s',
-      }}
-      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#faf9f7')}
-      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-    >
-      <div
-        style={{
-          width: 36,
-          height: 36,
-          borderRadius: 10,
-          backgroundColor: '#f8f6f3',
-          border: '1px solid #eae7e2',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-          marginTop: 2,
-        }}
-      >
-        <Icon size={16} color={task.iconColor} />
-      </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 8,
-            marginBottom: 2,
-          }}
-        >
-          <span
-            style={{
-              fontSize: 14,
-              fontWeight: 500,
-              color: '#1a1a1a',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {task.title}
-          </span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-            {task.badge && (
-              <span
-                style={{
-                  fontSize: 11,
-                  fontWeight: 500,
-                  color: '#888',
-                  backgroundColor: '#f0ede8',
-                  padding: '1px 6px',
-                  borderRadius: 4,
-                }}
-              >
-                {task.badge}
-              </span>
-            )}
-            {task.date && (
-              <span style={{ fontSize: 12, color: '#bbb', whiteSpace: 'nowrap' }}>
-                {task.date}
-              </span>
-            )}
-          </div>
-        </div>
-        <p
-          style={{
-            fontSize: 12,
-            color: '#999',
-            lineHeight: 1.4,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {task.preview}
-        </p>
-      </div>
-    </button>
-  );
-}
-
-/* ── Keyboard hint styles ── */
 const kbdStyle: React.CSSProperties = {
   display: 'inline-flex',
   alignItems: 'center',

@@ -21,6 +21,7 @@ import { InviteModal } from '../components/InviteModal';
 import { SettingsModal } from '../components/SettingsModal';
 import { createProject } from '../lib/api';
 import { isAuthenticated, savePendingPrompt } from '../lib/auth';
+import { toast } from '../stores/toast-store';
 
 const quickChips = [
   'Create a landing page',
@@ -63,8 +64,8 @@ export function Dashboard() {
       const name = finalPrompt.slice(0, 50) || 'New Project';
       const project = await createProject({ name, description: finalPrompt });
       navigate(`/project/${project.id}`, { state: { initialPrompt: finalPrompt } });
-    } catch (err) {
-      console.error('Failed to create project:', err);
+    } catch {
+      toast('Server unavailable — starting in offline mode.', 'error');
       const tempId = crypto.randomUUID();
       navigate(`/project/${tempId}`, { state: { initialPrompt: finalPrompt } });
     } finally {
@@ -78,8 +79,8 @@ export function Dashboard() {
       navigate(`/project/${project.id}`, {
         state: data.description ? { initialPrompt: data.description } : undefined,
       });
-    } catch (err) {
-      console.error('Failed to create project:', err);
+    } catch {
+      toast('Server unavailable — starting in offline mode.', 'error');
       const tempId = crypto.randomUUID();
       navigate(`/project/${tempId}`, {
         state: data.description ? { initialPrompt: data.description } : undefined,
@@ -241,7 +242,8 @@ export function Dashboard() {
 
           {/* Notification bell */}
           <button
-            onClick={() => navigate('/library')}
+            onClick={() => setSettingsOpen(true)}
+            title="Notifications"
             style={{
               position: 'relative',
               background: 'none',
@@ -252,18 +254,6 @@ export function Dashboard() {
             }}
           >
             <Bell size={18} />
-            <span
-              style={{
-                position: 'absolute',
-                top: 2,
-                right: 2,
-                width: 7,
-                height: 7,
-                backgroundColor: '#ef4444',
-                borderRadius: '50%',
-                border: '1.5px solid #f5f3ef',
-              }}
-            />
           </button>
 
           {/* Credits */}
@@ -409,7 +399,12 @@ export function Dashboard() {
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <button style={toolbarBtnStyle} title="Emoji" onClick={() => setPrompt((p) => p + ' ')}>
+                  <button style={toolbarBtnStyle} title="Emoji picker" onClick={() => {
+                    const emojis = ['🚀', '💡', '⚡', '🎨', '🔧', '📱', '🌐', '✨', '🏗️', '📊'];
+                    const emoji = emojis[Math.floor(Math.random() * emojis.length)];
+                    setPrompt((p) => p + emoji);
+                    textareaRef.current?.focus();
+                  }}>
                     <Smile size={16} />
                   </button>
                   <button style={toolbarBtnStyle} title="Voice" onClick={handleVoice}>

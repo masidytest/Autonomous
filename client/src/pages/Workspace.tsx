@@ -183,7 +183,7 @@ export function Workspace() {
           // 3. Backend unreachable — set local state, still try socket connection
           setProject({
             id: id,
-            name: 'Masidy 1.6 Lite',
+            name: 'Untitled Project',
             slug: id,
             description: 'Autonomous AI Agent',
             framework: 'react',
@@ -752,7 +752,7 @@ export function Workspace() {
           {/* Left: project name + action icons */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <span style={{ fontSize: 14, fontWeight: 600, color: '#1a1a1a' }}>
-              {currentProject?.name || 'Masidy 1.6 Lite'}
+              {currentProject?.name || 'Untitled Project'}
             </span>
             <ChevronDown size={14} color="#999" style={{ cursor: 'pointer' }} />
             <div style={{ width: 1, height: 16, backgroundColor: '#e8e5e0', margin: '0 4px' }} />

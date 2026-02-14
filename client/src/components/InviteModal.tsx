@@ -6,11 +6,16 @@ interface InviteModalProps {
   onClose: () => void;
 }
 
+function getInviteLink() {
+  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://masidy-agent.vercel.app';
+  return `${origin}/auth?ref=invite`;
+}
+
 const socialButtons = [
-  { id: 'facebook', label: 'Facebook', icon: 'f', color: '#1877F2', bg: '#f0f5ff' },
-  { id: 'x', label: 'X', icon: '𝕏', color: '#1a1a1a', bg: '#f5f5f5' },
-  { id: 'linkedin', label: 'LinkedIn', icon: 'in', color: '#0A66C2', bg: '#f0f5ff' },
-  { id: 'reddit', label: 'Reddit', icon: 'r', color: '#FF4500', bg: '#fff5f0' },
+  { id: 'facebook', label: 'Facebook', icon: 'f', color: '#1877F2', bg: '#f0f5ff', urlFn: (link: string) => `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(link)}` },
+  { id: 'x', label: 'X', icon: '𝕏', color: '#1a1a1a', bg: '#f5f5f5', urlFn: (link: string) => `https://x.com/intent/tweet?text=${encodeURIComponent('Check out Masidy Agent — an AI software engineer!')}&url=${encodeURIComponent(link)}` },
+  { id: 'linkedin', label: 'LinkedIn', icon: 'in', color: '#0A66C2', bg: '#f0f5ff', urlFn: (link: string) => `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(link)}` },
+  { id: 'reddit', label: 'Reddit', icon: 'r', color: '#FF4500', bg: '#fff5f0', urlFn: (link: string) => `https://www.reddit.com/submit?url=${encodeURIComponent(link)}&title=${encodeURIComponent('Masidy Agent — AI Software Engineer')}` },
 ];
 
 export function InviteModal({ isOpen, onClose }: InviteModalProps) {
@@ -20,7 +25,7 @@ export function InviteModal({ isOpen, onClose }: InviteModalProps) {
   const [activeTab, setActiveTab] = useState<'redeem' | 'history'>('redeem');
   const emailRef = useRef<HTMLInputElement>(null);
 
-  const inviteLink = 'https://masidy.im/invitation/ABCD1234XYZ';
+  const inviteLink = getInviteLink();
 
   useEffect(() => {
     if (isOpen) {
@@ -49,6 +54,9 @@ export function InviteModal({ isOpen, onClose }: InviteModalProps) {
 
   function handleSendEmail() {
     if (!email.trim()) return;
+    const subject = encodeURIComponent('Join me on Masidy Agent');
+    const body = encodeURIComponent(`Hey! Check out Masidy Agent — an AI-powered software engineer that builds full apps from a single prompt.\n\nJoin here: ${inviteLink}`);
+    window.open(`mailto:${email.trim()}?subject=${subject}&body=${body}`);
     setSent(true);
     setEmail('');
     setTimeout(() => setSent(false), 2000);
@@ -231,6 +239,7 @@ export function InviteModal({ isOpen, onClose }: InviteModalProps) {
             {socialButtons.map((s) => (
               <button
                 key={s.id}
+                onClick={() => window.open(s.urlFn(inviteLink), '_blank', 'width=600,height=400')}
                 style={{
                   display: 'flex',
                   alignItems: 'center',

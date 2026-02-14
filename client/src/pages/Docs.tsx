@@ -5,9 +5,7 @@ import {
   Settings,
   ChevronDown,
   ChevronRight,
-  Play,
   AlignLeft,
-  ExternalLink,
 } from 'lucide-react';
 
 /* ── Docs data ── */
@@ -125,6 +123,271 @@ const pageContent: Record<string, { title: string; subtitle: string; sections: {
         heading: 'Enterprise',
         paragraphs: [
           'Custom pricing for teams. Includes SSO, audit logs, dedicated infrastructure, SLA guarantees, and a dedicated account manager. Contact sales for details.',
+        ],
+      },
+    ],
+  },
+  agents: {
+    title: 'AI Agents',
+    subtitle: 'How Masidy AI agents work behind the scenes',
+    sections: [
+      {
+        heading: 'Creating an Agent',
+        paragraphs: [
+          'When you submit a prompt, Masidy spins up an autonomous agent powered by Claude Opus 4.6. The agent receives your prompt along with any enabled skills and begins planning its approach.',
+          'Each agent has access to a full sandbox environment with terminal, file system, and browser capabilities. It can install packages, write code, run tests, and take screenshots — all without any manual intervention.',
+        ],
+      },
+      {
+        heading: 'Agent Memory',
+        paragraphs: [
+          'Agents maintain context throughout a task session. They remember every file they have written, every command they have run, and every decision they have made. This enables multi-step workflows where the agent can build on its own previous work.',
+        ],
+      },
+      {
+        heading: 'Agent Skills',
+        paragraphs: [
+          'Skills are reusable instructions that augment the agent\'s capabilities. You can enable or disable skills from the Agents page. Each skill provides domain-specific knowledge — for example, the "React + Tailwind" skill teaches the agent best practices for modern React development.',
+        ],
+      },
+    ],
+  },
+  memory: {
+    title: 'Persistent Memory',
+    subtitle: 'How project state persists across sessions',
+    sections: [
+      {
+        heading: 'How Memory Works',
+        paragraphs: [
+          'Every file the agent creates is stored in the project database. When you return to a project, all previously written files are available. The agent can read and modify them in subsequent tasks.',
+          'Terminal output, chat history, and deployment state are also preserved, giving you a complete record of how your project was built.',
+        ],
+      },
+      {
+        heading: 'Memory Limits',
+        paragraphs: [
+          'Free plan projects retain data for 30 days of inactivity. Pro plan projects are retained indefinitely. Each project can store up to 500 files with a total size limit of 100 MB.',
+        ],
+      },
+    ],
+  },
+  browser: {
+    title: 'Browser Cloud',
+    subtitle: 'The agent\'s built-in browser for research and testing',
+    sections: [
+      {
+        heading: 'Browser Sandbox',
+        paragraphs: [
+          'Each agent session includes a headless Chromium browser powered by Playwright. The agent can navigate to any URL, take screenshots, extract content, and interact with web pages.',
+          'This is useful for researching APIs, checking documentation, testing deployed applications, and scraping data for your project.',
+        ],
+      },
+      {
+        heading: 'Persistent Sessions',
+        paragraphs: [
+          'Browser sessions persist for the duration of a task. The agent can navigate between pages, fill out forms, and verify its own work by browsing the application it just built.',
+        ],
+      },
+    ],
+  },
+  code: {
+    title: 'Code Execution',
+    subtitle: 'Running code in the secure sandbox environment',
+    sections: [
+      {
+        heading: 'Supported Languages',
+        paragraphs: [
+          'The sandbox supports Node.js (JavaScript/TypeScript), Python, and shell scripting out of the box. The agent can also install additional runtimes and tools via npm, pip, or apt-get.',
+        ],
+      },
+      {
+        heading: 'Execution Limits',
+        paragraphs: [
+          'Each command execution has a timeout of 120 seconds. Long-running processes like dev servers are started in the background. Free plan tasks are limited to 30 minutes total execution time; Pro plans allow up to 2 hours.',
+        ],
+      },
+    ],
+  },
+  files: {
+    title: 'File Management',
+    subtitle: 'How the agent creates and manages project files',
+    sections: [
+      {
+        heading: 'File Storage',
+        paragraphs: [
+          'All files created by the agent are stored in the project database and displayed in the Files tab of the workspace. You can view, copy, and download any file at any time.',
+          'The Code tab provides a VS Code-like interface for browsing file contents with syntax highlighting.',
+        ],
+      },
+      {
+        heading: 'Sharing Files',
+        paragraphs: [
+          'You can download all project files as a ZIP archive using the Download button in the preview toolbar. Files can also be pushed to a GitHub repository directly from the workspace.',
+        ],
+      },
+    ],
+  },
+  'getting-started': {
+    title: 'Getting Started',
+    subtitle: 'Build your first project in minutes',
+    sections: [
+      {
+        heading: 'Quick Start',
+        paragraphs: [
+          '1. Go to the Dashboard and type a description of what you want to build.',
+          '2. Press Enter or click Send. Masidy will create a project and start building.',
+          '3. Watch the agent plan, write code, install dependencies, and set up your project in real time.',
+          '4. When the build completes, preview your app in the browser panel, download the code, or deploy it.',
+        ],
+      },
+      {
+        heading: 'Project Structure',
+        paragraphs: [
+          'Masidy generates standard project structures based on the framework it selects. For React projects, you will get a typical Vite + React setup with components, styles, and configuration files. For Node.js APIs, you will get an Express server with routes and middleware.',
+        ],
+      },
+    ],
+  },
+  templates: {
+    title: 'Templates',
+    subtitle: 'Pre-built starting points for common project types',
+    sections: [
+      {
+        heading: 'Available Templates',
+        paragraphs: [
+          'Masidy offers templates for common project types: landing pages, dashboards, e-commerce storefronts, portfolio sites, API servers, and full-stack applications. Mention the template type in your prompt to get started faster.',
+        ],
+      },
+      {
+        heading: 'Custom Templates',
+        paragraphs: [
+          'Pro users can save any completed project as a custom template. When creating a new project, reference your template by name and the agent will use it as the foundation.',
+        ],
+      },
+    ],
+  },
+  deploy: {
+    title: 'Deployment',
+    subtitle: 'Ship your projects to production',
+    sections: [
+      {
+        heading: 'Auto Deploy',
+        paragraphs: [
+          'Click the Publish button in the workspace header to deploy your project. The agent will run the build process and deploy the output to Vercel, returning a live production URL.',
+        ],
+      },
+      {
+        heading: 'Manual Deploy',
+        paragraphs: [
+          'You can also download your project as a ZIP and deploy it manually to any hosting provider. The project includes all configuration files needed for deployment on Vercel, Netlify, or any static hosting service.',
+        ],
+      },
+    ],
+  },
+  domains: {
+    title: 'Custom Domains',
+    subtitle: 'Connect your own domain to deployed projects',
+    sections: [
+      {
+        heading: 'Adding a Domain',
+        paragraphs: [
+          'After deploying your project, you can add a custom domain through the Vercel dashboard. Point your domain\'s DNS records to Vercel\'s servers and the connection will be verified automatically.',
+        ],
+      },
+      {
+        heading: 'SSL Certificates',
+        paragraphs: [
+          'All deployments include free SSL certificates via Let\'s Encrypt. Certificates are provisioned automatically when you add a custom domain and renew before expiration.',
+        ],
+      },
+    ],
+  },
+  'github-int': {
+    title: 'GitHub Integration',
+    subtitle: 'Connect your projects to GitHub repositories',
+    sections: [
+      {
+        heading: 'Connecting GitHub',
+        paragraphs: [
+          'Sign in with GitHub to enable repository creation and code pushing. Your GitHub access token is stored securely and used only for repository operations you initiate.',
+        ],
+      },
+      {
+        heading: 'Auto Sync',
+        paragraphs: [
+          'After creating a GitHub repository for your project, click the GitHub button in the workspace to push your latest code. Each push creates a new commit with all project files.',
+        ],
+      },
+    ],
+  },
+  'vercel-int': {
+    title: 'Vercel Integration',
+    subtitle: 'Deploy projects directly to Vercel',
+    sections: [
+      {
+        heading: 'Connecting Vercel',
+        paragraphs: [
+          'Masidy uses the Vercel Deployments API to deploy your projects. Deployments are handled server-side — no additional Vercel account setup is required on your end.',
+        ],
+      },
+      {
+        heading: 'Deploy Hooks',
+        paragraphs: [
+          'Each deployment returns a unique URL. You can trigger re-deployments by clicking Publish again or by asking the agent to deploy. Previous deployment URLs remain active.',
+        ],
+      },
+    ],
+  },
+  'supabase-int': {
+    title: 'Supabase Integration',
+    subtitle: 'Add a database and auth to your projects',
+    sections: [
+      {
+        heading: 'Database Setup',
+        paragraphs: [
+          'When you ask the agent to add a database, it can set up Supabase with tables, row-level security policies, and client-side queries. The agent generates the schema and migration files automatically.',
+        ],
+      },
+      {
+        heading: 'Auth Integration',
+        paragraphs: [
+          'Supabase Auth provides email/password, magic link, and social login out of the box. The agent can wire up authentication flows including sign-up, sign-in, and protected routes.',
+        ],
+      },
+    ],
+  },
+  'stripe-int': {
+    title: 'Stripe Integration',
+    subtitle: 'Add payments and subscriptions to your projects',
+    sections: [
+      {
+        heading: 'Payment Setup',
+        paragraphs: [
+          'The agent can integrate Stripe Checkout for one-time payments or Stripe Billing for subscriptions. It generates the server-side API routes and client-side checkout flows.',
+        ],
+      },
+      {
+        heading: 'Webhooks',
+        paragraphs: [
+          'For production payment flows, the agent sets up webhook handlers to process payment events like successful charges, subscription updates, and failed payments.',
+        ],
+      },
+    ],
+  },
+  'slack-int': {
+    title: 'Slack Integration',
+    subtitle: 'Get notifications and updates in Slack',
+    sections: [
+      {
+        heading: 'Bot Setup',
+        paragraphs: [
+          'Connect a Slack bot to receive notifications when builds complete, deployments succeed, or errors occur. The agent can generate the Slack bot code and webhook handlers.',
+        ],
+      },
+      {
+        heading: 'Notifications',
+        paragraphs: [
+          'Configure which events trigger Slack notifications. Common options include build completion, deployment status, and error alerts. Messages include direct links back to your Masidy project.',
         ],
       },
     ],
@@ -461,21 +724,17 @@ export function Docs() {
             {content.subtitle}
           </p>
 
-          {/* Video embed placeholder */}
+          {/* Hero banner */}
           {activeArticle === 'welcome' && (
             <div
               style={{
                 width: '100%',
-                aspectRatio: '16/9',
+                padding: '40px 28px',
                 backgroundColor: '#1a1a1a',
                 borderRadius: 12,
                 marginBottom: 32,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
                 position: 'relative',
                 overflow: 'hidden',
-                cursor: 'pointer',
               }}
             >
               {/* Gradient overlay */}
@@ -486,20 +745,13 @@ export function Docs() {
                   background: 'linear-gradient(135deg, rgba(30,30,30,0.9) 0%, rgba(60,60,80,0.8) 100%)',
                 }}
               />
-              {/* Title text on video */}
-              <div
-                style={{
-                  position: 'absolute',
-                  top: 24,
-                  left: 28,
-                  zIndex: 2,
-                }}
-              >
-                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', marginBottom: 4 }}>
-                  Watch video
+              {/* Content */}
+              <div style={{ position: 'relative', zIndex: 2 }}>
+                <div style={{ fontSize: 24, fontWeight: 600, color: '#fff', lineHeight: 1.3, marginBottom: 8 }}>
+                  Introducing Masidy
                 </div>
-                <div style={{ fontSize: 22, fontWeight: 600, color: '#fff', lineHeight: 1.3 }}>
-                  Introducing<br />Masidy
+                <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)', lineHeight: 1.5, maxWidth: 400 }}>
+                  An autonomous AI agent that plans, codes, debugs, and deploys complete applications — powered by Claude Opus 4.6.
                 </div>
               </div>
               {/* Logo */}
@@ -507,7 +759,7 @@ export function Docs() {
                 style={{
                   position: 'absolute',
                   bottom: 20,
-                  left: 28,
+                  right: 28,
                   display: 'flex',
                   alignItems: 'center',
                   gap: 8,
@@ -532,22 +784,6 @@ export function Docs() {
                   </svg>
                 </div>
                 <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', fontWeight: 500 }}>masidy</span>
-              </div>
-              {/* Play button */}
-              <div
-                style={{
-                  width: 56,
-                  height: 56,
-                  borderRadius: '50%',
-                  backgroundColor: 'rgba(255,0,0,0.85)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  zIndex: 2,
-                  boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-                }}
-              >
-                <Play size={22} color="#fff" fill="#fff" />
               </div>
             </div>
           )}
@@ -620,9 +856,15 @@ export function Docs() {
               gap: 16,
             }}
           >
-            {['instagram', 'linkedin', 'x', 'youtube'].map((social) => (
-              <button
+            {[
+              { id: 'x', url: 'https://x.com' },
+              { id: 'github', url: 'https://github.com/masidytest/Autonomous' },
+            ].map(({ id: social, url }) => (
+              <a
                 key={social}
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
                 style={{
                   background: 'none',
                   border: 'none',
@@ -637,29 +879,17 @@ export function Docs() {
                 onMouseEnter={(e) => (e.currentTarget.style.color = '#888')}
                 onMouseLeave={(e) => (e.currentTarget.style.color = '#ccc')}
               >
-                {social === 'instagram' && (
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
-                    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
-                    <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
-                  </svg>
-                )}
-                {social === 'linkedin' && (
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
-                  </svg>
-                )}
                 {social === 'x' && (
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
                   </svg>
                 )}
-                {social === 'youtube' && (
+                {social === 'github' && (
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+                    <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z" />
                   </svg>
                 )}
-              </button>
+              </a>
             ))}
           </div>
         </main>

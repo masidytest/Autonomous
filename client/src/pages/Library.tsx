@@ -7,6 +7,7 @@ import { NewProjectModal } from '../components/NewProjectModal';
 import { InviteModal } from '../components/InviteModal';
 import { SettingsModal } from '../components/SettingsModal';
 import { createProject, fetchProjects, fetchAllTasks, type ProjectData, type TaskData } from '../lib/api';
+import { toast } from '../stores/toast-store';
 import {
   SlidersHorizontal,
   Star,
@@ -42,7 +43,7 @@ export function Library() {
   const [tasks, setTasks] = useState<TaskData[]>([]);
 
   useEffect(() => {
-    fetchProjects().then(setProjects).catch(() => {});
+    fetchProjects().then(setProjects).catch(() => toast('Failed to load projects', 'error'));
     fetchAllTasks().then(setTasks).catch(() => {});
   }, []);
 
@@ -98,7 +99,7 @@ export function Library() {
               state: data.description ? { initialPrompt: data.description } : undefined,
             });
           } catch (err) {
-            console.error('Failed to create project:', err);
+            toast('Failed to create project. Please try again.', 'error');
           }
         }}
       />
@@ -374,6 +375,12 @@ export function Library() {
                         </span>
                       </div>
                       <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (confirm(`Delete project "${item.projectName}"? This cannot be undone.`)) {
+                            // TODO: implement delete API
+                          }
+                        }}
                         style={{
                           background: 'none',
                           border: 'none',
@@ -383,6 +390,7 @@ export function Library() {
                           borderRadius: 4,
                           display: 'flex',
                         }}
+                        title="Options"
                       >
                         <MoreHorizontal size={16} />
                       </button>
@@ -551,7 +559,16 @@ export function Library() {
                     <span style={{ fontSize: 12, color: '#bbb', minWidth: 70, textAlign: 'right' }}>
                       {item.date}
                     </span>
-                    <MoreHorizontal size={16} color="#ccc" />
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/project/${item.id}`);
+                      }}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ccc', padding: 0, display: 'flex' }}
+                      title="Open project"
+                    >
+                      <MoreHorizontal size={16} />
+                    </button>
                   </div>
                 </button>
               ))}

@@ -25,8 +25,6 @@ function getSocket(): Socket {
 }
 
 function setupListeners(sock: Socket) {
-  const store = useAgentStore.getState;
-
   sock.on('connect', () => {
     console.log('Socket connected:', sock.id);
   });
