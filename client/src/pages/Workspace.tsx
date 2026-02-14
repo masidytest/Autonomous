@@ -37,6 +37,7 @@ import {
   X,
   Link2,
   Download,
+  Zap,
 } from 'lucide-react';
 import { Sidebar } from '../components/Sidebar';
 import { SearchModal } from '../components/SearchModal';
@@ -45,6 +46,7 @@ import { InviteModal } from '../components/InviteModal';
 import { SettingsModal } from '../components/SettingsModal';
 import { useAgentStore } from '../stores/agent-store';
 import { useUsageStore } from '../stores/usage-store';
+import { useSkillsStore } from '../stores/skills-store';
 import { fetchProject, createProject, createGitHubRepo, pushToGitHub, shareProject, getDownloadUrl } from '../lib/api';
 import { joinProject, leaveProject, createTask, cancelTask, resumeTask } from '../lib/socket';
 import type { ChatMessage as ChatMessageType } from '@shared/types';
@@ -1056,6 +1058,7 @@ export function Workspace() {
                     <button style={inputIconStyle} title="Connectors & Settings" onClick={handleConnectors}>
                       <Link2 size={16} />
                     </button>
+                    <SkillsBadge />
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                     {isExecuting && (
@@ -1915,6 +1918,30 @@ function SuggestionCards({ onSuggestionClick }: { onSuggestionClick: (prompt: st
         ))}
       </div>
     </div>
+  );
+}
+
+/* ── Skills badge in chat input toolbar ── */
+function SkillsBadge() {
+  const enabledCount = useSkillsStore((s) => s.skills.filter((sk) => sk.enabled).length);
+  const totalCount = useSkillsStore((s) => s.skills.length);
+  const navigate = useNavigate();
+
+  return (
+    <button
+      onClick={() => navigate('/agents')}
+      title={`${enabledCount} of ${totalCount} skills active`}
+      style={{
+        display: 'inline-flex', alignItems: 'center', gap: 4,
+        padding: '4px 8px', fontSize: 11, fontWeight: 600,
+        color: '#7c3aed', backgroundColor: '#f5f0ff',
+        border: '1px solid #e9d5ff', borderRadius: 6,
+        cursor: 'pointer', fontFamily: 'inherit',
+      }}
+    >
+      <Zap size={11} />
+      {enabledCount}
+    </button>
   );
 }
 

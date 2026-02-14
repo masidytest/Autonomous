@@ -47,7 +47,7 @@ export function createSocketServer(httpServer: HttpServer): SocketServer {
     // Create a task
     socket.on(
       'task:create',
-      async ({ projectId, prompt }: { projectId: string; prompt: string }) => {
+      async ({ projectId, prompt, skills }: { projectId: string; prompt: string; skills?: { name: string; content: string }[] }) => {
         try {
           // Get project (or auto-create if it doesn't exist yet)
           let project = await db.query.projects.findFirst({
@@ -73,6 +73,11 @@ export function createSocketServer(httpServer: HttpServer): SocketServer {
 
           const orchestrator = new AgentOrchestrator(io, project.id, project.slug);
           orchestrators.set(project.id, orchestrator);
+
+          // Inject enabled skills into the orchestrator
+          if (skills && skills.length > 0) {
+            orchestrator.setSkills(skills);
+          }
 
           // Execute in background (don't await)
           orchestrator.execute(prompt).catch((err) => {

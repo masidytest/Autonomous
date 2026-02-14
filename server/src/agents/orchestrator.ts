@@ -236,6 +236,7 @@ export class AgentOrchestrator {
   private stepIndex = 0;
   private startTime = 0;
   private totalTokens = 0;
+  private activeSkills: { name: string; content: string }[] = [];
 
   constructor(io: SocketServer, projectId: string, projectSlug: string) {
     this.io = io;
@@ -250,6 +251,22 @@ export class AgentOrchestrator {
     this.anthropic = new Anthropic({
       apiKey: process.env.ANTHROPIC_API_KEY,
     });
+  }
+
+  /** Inject active skills from the client */
+  setSkills(skills: { name: string; content: string }[]) {
+    this.activeSkills = skills;
+  }
+
+  /** Build the full system prompt with active skills injected */
+  private buildSystemPrompt(): string {
+    if (this.activeSkills.length === 0) return SYSTEM_PROMPT;
+
+    const skillsSection = this.activeSkills
+      .map((s) => `### ${s.name}\n${s.content}`)
+      .join('\n\n');
+
+    return `${SYSTEM_PROMPT}\n\n## Active Skills (${this.activeSkills.length} enabled)\nThe following specialized skill sets are active. Use their knowledge and best practices when relevant:\n\n${skillsSection}`;
   }
 
   async execute(prompt: string): Promise<void> {
@@ -534,7 +551,7 @@ export class AgentOrchestrator {
         return await this.anthropic.messages.create({
           model: process.env.AI_MODEL || 'claude-opus-4-6',
           max_tokens: 16384,
-          system: SYSTEM_PROMPT,
+          system: this.buildSystemPrompt(),
           tools: TOOL_DEFINITIONS,
           messages: conversationMessages,
         });

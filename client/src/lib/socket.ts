@@ -1,6 +1,7 @@
 import { io, type Socket } from 'socket.io-client';
 import { useAgentStore } from '../stores/agent-store';
 import { useUsageStore } from '../stores/usage-store';
+import { useSkillsStore } from '../stores/skills-store';
 import { toastFriendly } from '../stores/toast-store';
 import { v4 as uuidv4 } from 'uuid';
 import type { StepUpdate, TaskPlan } from '@shared/types';
@@ -233,7 +234,12 @@ export function createTask(projectId: string, prompt: string) {
     content: prompt,
     timestamp: Date.now(),
   });
-  getSocket().emit('task:create', { projectId, prompt });
+  // Send enabled skill names so the server can inject them into the system prompt
+  const enabledSkills = useSkillsStore.getState().getEnabledSkills().map((s) => ({
+    name: s.name,
+    content: s.content,
+  }));
+  getSocket().emit('task:create', { projectId, prompt, skills: enabledSkills });
 }
 
 export function cancelTask(taskId: string) {
