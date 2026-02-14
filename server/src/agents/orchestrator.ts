@@ -1,6 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import type { Server as SocketServer } from 'socket.io';
-import { eq } from 'drizzle-orm';
+import { eq, desc } from 'drizzle-orm';
 import { db } from '../services/database.js';
 import { tasks, steps, messages, projects, files as filesTable } from '../../../shared/schema.js';
 import type { StepUpdate, TaskPlan, ToolResult, ServerEvent } from '../../../shared/types.js';
@@ -14,48 +14,32 @@ import { DeployTool } from '../tools/deploy.js';
 const MAX_ITERATIONS = 20;
 
 /**
- * Build a dynamic system prompt that embeds the user's request directly
- * so the AI cannot drift from it.
+ * Build a system prompt for a NEW project build.
  */
-function buildSystemPrompt(userRequest: string): string {
+function buildNewProjectPrompt(userRequest: string): string {
   return `You are Masidy Agent. You build exactly what users ask for.
 
 === YOUR ASSIGNMENT ===
 The user wants: "${userRequest}"
-You MUST build exactly this. Not something else. Not a variation. EXACTLY this.
+Build EXACTLY this. Not something else. EXACTLY this.
 ========================
 
-## ABSOLUTE RULES
+## RULES
 
-1. BUILD WHAT WAS ASKED — The project name, type, theme, and content must match "${userRequest}" exactly. If the user asked for a "crypto currency platform", every file you create must be about crypto currency. Do not build a search tool, a portfolio, a dashboard, or anything else.
+1. BUILD WHAT WAS ASKED — Everything you create must be about "${userRequest}". The title, content, colors, and data must all relate to this topic.
 
-2. WRITE EACH FILE ONLY ONCE — Plan everything in your head first. Then write each file once with complete, final content. You get ONE chance per file. If you try to write the same file twice, it will be rejected.
+2. WRITE EACH FILE ONLY ONCE — Plan first, then write complete files. If you try to write the same file again, it will be rejected.
 
-3. MAXIMUM 3 FILES — You create exactly these files:
-   - /workspace/index.html (the complete HTML page with ALL content, structure, and inline styles or Tailwind classes)
-   - /workspace/css/styles.css (additional CSS if needed)
-   - /workspace/js/app.js (JavaScript for interactivity)
-   That's it. No other files. No subdirectories.
+3. CREATE 3 FILES in this order:
+   - /workspace/index.html (complete HTML with all content)
+   - /workspace/css/styles.css (CSS styles)
+   - /workspace/js/app.js (JavaScript)
 
-4. EXACT WORKFLOW — Do these steps in order, nothing else:
-   Step 1: Call the "plan" tool with 3 steps (write index.html, write styles.css, write app.js)
-   Step 2: Call write_file for /workspace/index.html with the COMPLETE page
-   Step 3: Call write_file for /workspace/css/styles.css
-   Step 4: Call write_file for /workspace/js/app.js
-   Step 5: Send a brief summary message. STOP.
+4. WORKFLOW: plan → write index.html → write styles.css → write app.js → summary. That's it.
 
-5. FORBIDDEN ACTIONS:
-   - Do NOT call list_files or read_file (there are no existing files to read)
-   - Do NOT call browse (the preview panel shows your HTML automatically)
-   - Do NOT call run_command (no terminal needed for static sites)
-   - Do NOT call search_web (you already know how to build this)
-   - Do NOT rewrite any file — one write per file, period
-   - Do NOT start dev servers
-   - Do NOT create more than 3 files
+5. FORBIDDEN: No browsing, no dev servers, no terminal commands, no searching, no reading files. Just plan and write.
 
-## HOW TO BUILD
-
-Use static HTML with CDN libraries. Available CDNs:
+## CDN LIBRARIES
 - Tailwind: <script src="https://cdn.tailwindcss.com"></script>
 - Chart.js: <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 - Lucide Icons: <script src="https://unpkg.com/lucide@latest"></script>
@@ -65,25 +49,60 @@ Use static HTML with CDN libraries. Available CDNs:
 - Alpine.js: <script src="https://unpkg.com/alpinejs@3/dist/cdn.min.js" defer></script>
 
 ## QUALITY
-- Modern, premium UI — the page should look professional and polished
-- Use Tailwind CSS for styling — use real, specific content related to "${userRequest}"
-- Responsive design, smooth animations, proper spacing
-- Real placeholder data that matches the theme (e.g., crypto prices for crypto, recipes for food apps, etc.)
-- The <title> must match what the user asked for
-
-## PERSONALITY
-- Brief and friendly. Don't over-explain.
-- After writing all files, give a 2-3 sentence summary and suggest 2 improvements.`;
+- Premium, modern UI with Tailwind CSS
+- Real content related to "${userRequest}" (not lorem ipsum)
+- Responsive, animated, professional
+- The <title> must describe "${userRequest}"`;
 }
 
-const TOOL_DEFINITIONS: Anthropic.Tool[] = [
+/**
+ * Build a system prompt for a FOLLOW-UP modification on an existing project.
+ */
+function buildFollowUpPrompt(originalDescription: string, existingFiles: { path: string; content: string }[], userRequest: string): string {
+  // Build a summary of existing files (just paths + first 200 chars to save tokens)
+  const fileSummary = existingFiles.map(f => {
+    const preview = f.content.substring(0, 300).replace(/\n/g, ' ');
+    return `- ${f.path}: ${preview}...`;
+  }).join('\n');
+
+  return `You are Masidy Agent. You MODIFY existing projects based on user feedback.
+
+=== CONTEXT ===
+Original project: "${originalDescription}"
+The user already has a working project with these files:
+${fileSummary}
+
+=== USER'S REQUEST ===
+The user says: "${userRequest}"
+Apply this change to the existing project. Keep everything else the same.
+========================
+
+## RULES
+
+1. MODIFY, DON'T REBUILD — The project already exists. Only change what the user asked for.
+
+2. READ FIRST, THEN WRITE — Use read_file to see the current content, then write_file with the updated version.
+
+3. KEEP THE SAME PROJECT — Do NOT change the project type, theme, or purpose. Only apply the specific change requested.
+
+4. MINIMAL CHANGES — Only modify the files that need changing. If the user says "change the name", only update the title/heading text, don't rewrite the entire page.
+
+## WORKFLOW
+1. Read the file(s) that need changing
+2. Write the updated version(s)
+3. Brief summary of what changed
+
+## FORBIDDEN: No browsing, no dev servers, no terminal commands, no searching. Just read and write files.`;
+}
+
+const NEW_PROJECT_TOOLS: Anthropic.Tool[] = [
   {
     name: 'plan',
-    description: 'Create an execution plan. Call this FIRST. Plan must have exactly 3 steps: write index.html, write styles.css, write app.js.',
+    description: 'Create an execution plan. Call this FIRST for new builds.',
     input_schema: {
       type: 'object' as const,
       properties: {
-        goal: { type: 'string', description: 'Must match the user request exactly' },
+        goal: { type: 'string', description: 'Must match the user request' },
         steps: {
           type: 'array',
           items: {
@@ -102,49 +121,14 @@ const TOOL_DEFINITIONS: Anthropic.Tool[] = [
   },
   {
     name: 'write_file',
-    description: 'Write a file. Each file can only be written ONCE. Write COMPLETE content — you will not get another chance.',
+    description: 'Write a file ONCE with COMPLETE content.',
     input_schema: {
       type: 'object' as const,
       properties: {
-        path: { type: 'string', description: 'File path: /workspace/index.html, /workspace/css/styles.css, or /workspace/js/app.js' },
+        path: { type: 'string', description: 'File path' },
         content: { type: 'string', description: 'Complete file content' },
       },
       required: ['path', 'content'],
-    },
-  },
-  {
-    name: 'read_file',
-    description: 'Read a file. Only use if explicitly asked to modify an existing project.',
-    input_schema: {
-      type: 'object' as const,
-      properties: {
-        path: { type: 'string', description: 'File path to read' },
-      },
-      required: ['path'],
-    },
-  },
-  {
-    name: 'list_files',
-    description: 'List files. Only use if explicitly asked to modify an existing project.',
-    input_schema: {
-      type: 'object' as const,
-      properties: {
-        path: { type: 'string', description: 'Directory path', default: '/workspace' },
-        recursive: { type: 'boolean', default: false },
-      },
-      required: [],
-    },
-  },
-  {
-    name: 'run_command',
-    description: 'Run a shell command. Only for backend projects. Never use for frontend/static sites.',
-    input_schema: {
-      type: 'object' as const,
-      properties: {
-        command: { type: 'string', description: 'Shell command' },
-        timeout: { type: 'number', description: 'Timeout in ms' },
-      },
-      required: ['command'],
     },
   },
   {
@@ -162,11 +146,72 @@ const TOOL_DEFINITIONS: Anthropic.Tool[] = [
   },
   {
     name: 'ask_user',
-    description: 'Ask the user a question when you need clarification.',
+    description: 'Ask the user a clarification question.',
     input_schema: {
       type: 'object' as const,
       properties: {
-        question: { type: 'string', description: 'Question to ask' },
+        question: { type: 'string' },
+      },
+      required: ['question'],
+    },
+  },
+];
+
+const FOLLOW_UP_TOOLS: Anthropic.Tool[] = [
+  {
+    name: 'read_file',
+    description: 'Read a file to see its current content before modifying it.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        path: { type: 'string', description: 'File path to read' },
+      },
+      required: ['path'],
+    },
+  },
+  {
+    name: 'write_file',
+    description: 'Write updated content to a file.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        path: { type: 'string', description: 'File path' },
+        content: { type: 'string', description: 'Updated file content' },
+      },
+      required: ['path', 'content'],
+    },
+  },
+  {
+    name: 'list_files',
+    description: 'List files in the project.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        path: { type: 'string', default: '/workspace' },
+      },
+      required: [],
+    },
+  },
+  {
+    name: 'deploy',
+    description: 'Deploy the application to Vercel.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        buildCommand: { type: 'string' },
+        startCommand: { type: 'string' },
+        port: { type: 'number' },
+      },
+      required: [],
+    },
+  },
+  {
+    name: 'ask_user',
+    description: 'Ask the user a clarification question.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        question: { type: 'string' },
       },
       required: ['question'],
     },
@@ -196,6 +241,7 @@ export class AgentOrchestrator {
   private activeSkills: { name: string; content: string }[] = [];
   private writtenFiles: Set<string> = new Set();
   private userPrompt: string = '';
+  private isFollowUp: boolean = false;
 
   constructor(io: SocketServer, projectId: string, projectSlug: string) {
     this.io = io;
@@ -216,8 +262,14 @@ export class AgentOrchestrator {
     this.activeSkills = skills;
   }
 
-  private getSystemPrompt(): string {
-    let prompt = buildSystemPrompt(this.userPrompt);
+  private getSystemPrompt(existingFiles: { path: string; content: string }[], projectDescription: string): string {
+    let prompt: string;
+
+    if (this.isFollowUp) {
+      prompt = buildFollowUpPrompt(projectDescription, existingFiles, this.userPrompt);
+    } else {
+      prompt = buildNewProjectPrompt(this.userPrompt);
+    }
 
     if (this.activeSkills.length > 0) {
       const skillsSection = this.activeSkills
@@ -232,6 +284,23 @@ export class AgentOrchestrator {
   async execute(prompt: string): Promise<void> {
     this.startTime = Date.now();
     this.userPrompt = prompt;
+
+    // Check if this project already has files (= follow-up modification)
+    const rawFiles = await db.query.files.findMany({
+      where: eq(filesTable.projectId, this.projectId),
+    });
+    const existingFiles = rawFiles
+      .filter(f => f.content != null)
+      .map(f => ({ path: f.path, content: f.content as string }));
+    this.isFollowUp = existingFiles.length > 0;
+
+    // Get project description for context
+    const project = await db.query.projects.findFirst({
+      where: eq(projects.id, this.projectId),
+    });
+    const projectDescription = project?.description || project?.name || prompt;
+
+    console.log(`[Orchestrator] ${this.isFollowUp ? 'FOLLOW-UP' : 'NEW BUILD'} for project ${this.projectId}: "${prompt.substring(0, 80)}"`);
 
     const [task] = await db
       .insert(tasks)
@@ -252,8 +321,17 @@ export class AgentOrchestrator {
         .set({ containerId })
         .where(eq(projects.id, this.projectId));
 
-      // NO template scaffolding — let the AI build from scratch with the user's exact request
-      await this.agentLoop(prompt);
+      // For follow-ups, restore existing files into the sandbox
+      if (this.isFollowUp && existingFiles.length > 0) {
+        for (const f of existingFiles) {
+          if (f.content) {
+            await this.sandbox.writeFile(f.path, f.content);
+          }
+        }
+        console.log(`[Orchestrator] Restored ${existingFiles.length} existing files to sandbox`);
+      }
+
+      await this.agentLoop(prompt, existingFiles, projectDescription);
 
       const duration = Date.now() - this.startTime;
       await db
@@ -299,12 +377,22 @@ export class AgentOrchestrator {
     }
   }
 
-  private async agentLoop(initialPrompt: string): Promise<void> {
+  private async agentLoop(
+    initialPrompt: string,
+    existingFiles: { path: string; content: string }[],
+    projectDescription: string
+  ): Promise<void> {
+    let userMessage: string;
+
+    if (this.isFollowUp) {
+      const fileList = existingFiles.map(f => f.path).join(', ');
+      userMessage = `The user says: "${initialPrompt}"\n\nExisting files: ${fileList}\n\nApply this change. Read the relevant file(s) first, then write the updated version. Keep everything else the same.`;
+    } else {
+      userMessage = `Build this: ${initialPrompt}\n\nCreate a plan first, then write 3 files (index.html, css/styles.css, js/app.js) with complete content about "${initialPrompt}". Each file written ONCE.`;
+    }
+
     const conversationMessages: Anthropic.MessageParam[] = [
-      {
-        role: 'user',
-        content: `Build this: ${initialPrompt}\n\nRemember: plan first (3 steps), then write exactly 3 files (index.html, styles.css, app.js), then summarize. Each file written ONCE with complete content. Every file must be about "${initialPrompt}" — not about anything else.`,
-      },
+      { role: 'user', content: userMessage },
     ];
 
     if (this.taskId) {
@@ -315,12 +403,14 @@ export class AgentOrchestrator {
       });
     }
 
+    const tools = this.isFollowUp ? FOLLOW_UP_TOOLS : NEW_PROJECT_TOOLS;
+
     for (let iteration = 0; iteration < MAX_ITERATIONS; iteration++) {
       if (this.cancelled) {
         throw new Error('Task cancelled by user');
       }
 
-      const response = await this.callClaudeWithRetry(conversationMessages);
+      const response = await this.callClaudeWithRetry(conversationMessages, existingFiles, projectDescription, tools);
 
       if (response.usage) {
         this.totalTokens += response.usage.input_tokens + response.usage.output_tokens;
@@ -480,6 +570,9 @@ export class AgentOrchestrator {
 
   private async callClaudeWithRetry(
     conversationMessages: Anthropic.MessageParam[],
+    existingFiles: { path: string; content: string }[],
+    projectDescription: string,
+    tools: Anthropic.Tool[],
     retries = 3
   ): Promise<Anthropic.Message> {
     for (let attempt = 0; attempt <= retries; attempt++) {
@@ -487,8 +580,8 @@ export class AgentOrchestrator {
         return await this.anthropic.messages.create({
           model: process.env.AI_MODEL || 'claude-sonnet-4-5-20250929',
           max_tokens: 16384,
-          system: this.getSystemPrompt(),
-          tools: TOOL_DEFINITIONS,
+          system: this.getSystemPrompt(existingFiles, projectDescription),
+          tools,
           messages: conversationMessages,
         });
       } catch (error: any) {
@@ -496,7 +589,7 @@ export class AgentOrchestrator {
         const msg = error.message || '';
 
         if (status === 400 && (msg.includes('credit balance') || msg.includes('billing'))) {
-          throw new Error('Anthropic API credit balance too low. Check billing at console.anthropic.com.');
+          throw new Error('Anthropic API credit balance too low.');
         }
         if (status === 401) {
           throw new Error('Invalid Anthropic API key.');
@@ -538,19 +631,19 @@ export class AgentOrchestrator {
         this.emit({ type: 'task:planning', taskId: this.taskId!, plan });
         return {
           success: true,
-          output: `Plan created. Now write the 3 files in order: index.html, styles.css, app.js. Each file ONCE with COMPLETE content about "${this.userPrompt}".`,
+          output: `Plan created with ${plan.steps.length} steps. Now write the files. Each file ONCE, complete content about "${this.userPrompt}".`,
         };
       }
 
       case 'write_file': {
         const filePath = input.path as string;
 
-        // HARD BLOCK: reject rewrites
-        if (this.writtenFiles.has(filePath)) {
+        // For new builds, block rewrites. For follow-ups, allow them.
+        if (!this.isFollowUp && this.writtenFiles.has(filePath)) {
           return {
             success: false,
             output: '',
-            error: `BLOCKED: "${filePath}" was already written. You cannot rewrite files. Move to the next file or finish with a summary.`,
+            error: `BLOCKED: "${filePath}" already written. Move to the next file or summarize.`,
           };
         }
 
@@ -625,10 +718,9 @@ export class AgentOrchestrator {
           return {
             success: false,
             output: '',
-            error: 'Cannot browse localhost/file URLs. The preview shows your HTML automatically.',
+            error: 'Cannot browse localhost/file URLs.',
           };
         }
-
         const result = await this.browserTool.execute(input as any);
         if (result.metadata?.screenshot) {
           this.emit({
@@ -720,13 +812,9 @@ export class AgentOrchestrator {
       case 'read_file':
         return `Reading ${input.path}`;
       case 'list_files':
-        return `Listing files`;
+        return 'Listing files';
       case 'run_command':
         return `Running: ${input.command?.substring(0, 60) || 'command'}`;
-      case 'search_web':
-        return `Searching: ${input.query?.substring(0, 60) || 'web'}`;
-      case 'browse':
-        return `Browsing: ${input.url?.substring(0, 40) || ''}`;
       case 'deploy':
         return 'Deploying application';
       case 'ask_user':

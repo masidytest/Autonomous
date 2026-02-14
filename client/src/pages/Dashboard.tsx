@@ -19,7 +19,7 @@ import { SearchModal } from '../components/SearchModal';
 import { NewProjectModal } from '../components/NewProjectModal';
 import { InviteModal } from '../components/InviteModal';
 import { SettingsModal } from '../components/SettingsModal';
-import { createProject } from '../lib/api';
+import { createProject, extractProjectName } from '../lib/api';
 import { isAuthenticated, savePendingPrompt } from '../lib/auth';
 import { toast } from '../stores/toast-store';
 
@@ -61,7 +61,7 @@ export function Dashboard() {
 
     setCreating(true);
     try {
-      const name = finalPrompt.slice(0, 50) || 'New Project';
+      const name = extractProjectName(finalPrompt);
       const project = await createProject({ name, description: finalPrompt });
       navigate(`/project/${project.id}`, { state: { initialPrompt: finalPrompt } });
     } catch {

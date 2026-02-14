@@ -57,7 +57,9 @@ export function createSocketServer(httpServer: HttpServer): SocketServer {
           if (!project) {
             // Auto-create the project so the orchestrator can proceed
             const slug = `project-${uuidv4().substring(0, 8)}`;
-            const name = prompt.slice(0, 50) || 'New Project';
+            // Extract a meaningful short name from the prompt
+            const nameMatch = prompt.match(/(?:build|create|make|design|develop)\s+(?:a\s+|an\s+|the\s+)?(.{3,40}?)(?:\s+with|\s+using|\s+for|\s+that|\.|$)/i);
+            const name = nameMatch ? nameMatch[1].charAt(0).toUpperCase() + nameMatch[1].slice(1) : (prompt.slice(0, 40) || 'New Project');
             try {
               [project] = await db
                 .insert(projects)
@@ -69,6 +71,12 @@ export function createSocketServer(httpServer: HttpServer): SocketServer {
               socket.emit('error', { message: 'Failed to create project' });
               return;
             }
+          }
+
+          // Cancel any existing orchestrator for this project (e.g., one waiting on ask_user)
+          const existing = orchestrators.get(project.id);
+          if (existing) {
+            existing.cancel();
           }
 
           const orchestrator = new AgentOrchestrator(io, project.id, project.slug);

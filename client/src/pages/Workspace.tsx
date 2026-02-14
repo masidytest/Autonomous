@@ -48,7 +48,7 @@ import { SettingsModal } from '../components/SettingsModal';
 import { useAgentStore } from '../stores/agent-store';
 import { useUsageStore } from '../stores/usage-store';
 import { useSkillsStore } from '../stores/skills-store';
-import { fetchProject, createProject, createGitHubRepo, pushToGitHub, shareProject, getDownloadUrl } from '../lib/api';
+import { fetchProject, createProject, extractProjectName, createGitHubRepo, pushToGitHub, shareProject, getDownloadUrl } from '../lib/api';
 import { joinProject, leaveProject, createTask, cancelTask, resumeTask } from '../lib/socket';
 import type { ChatMessage as ChatMessageType } from '@shared/types';
 
@@ -166,7 +166,7 @@ export function Workspace() {
       } catch {
         // 2. Project not found (temp UUID) — create it via API
         try {
-          const name = state?.initialPrompt?.slice(0, 50) || 'New Project';
+          const name = state?.initialPrompt ? extractProjectName(state.initialPrompt) : 'New Project';
           const newProject = await createProject({ name, description: state?.initialPrompt });
           setProject({
             id: newProject.id,

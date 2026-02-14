@@ -3,6 +3,42 @@ import { getToken } from './auth';
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || '';
 const API_BASE = `${BACKEND_URL}/api`;
 
+/**
+ * Extract a short, meaningful project name from a long prompt.
+ * "Build a crypto currency platform" → "Crypto Currency Platform"
+ * "You are an e-commerce strategist with extensive..." → "E-commerce Strategy Platform"
+ * "Create a landing page for my bakery" → "Bakery Landing Page"
+ */
+export function extractProjectName(prompt: string): string {
+  const p = prompt.trim();
+
+  // If it's already short enough, capitalize and use it
+  if (p.length <= 40) {
+    return p.charAt(0).toUpperCase() + p.slice(1);
+  }
+
+  // Try to extract "build/create/make X" pattern
+  const buildMatch = p.match(/(?:build|create|make|design|develop)\s+(?:a\s+|an\s+|the\s+)?(.{3,40}?)(?:\s+with|\s+using|\s+for|\s+that|\.|$)/i);
+  if (buildMatch) {
+    const name = buildMatch[1].trim();
+    return name.charAt(0).toUpperCase() + name.slice(1);
+  }
+
+  // Try to find the main subject — look for key nouns after common preambles
+  const cleaned = p
+    .replace(/^(you are|i want|i need|please|can you|help me|i'd like|i would like)\s+/i, '')
+    .replace(/^(an?\s+|the\s+)/i, '')
+    .replace(/\s+(?:with|using|that|which|who|where|when|please|and|also|including).*$/i, '');
+
+  if (cleaned.length <= 50 && cleaned.length >= 3) {
+    return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+  }
+
+  // Fallback: first 40 chars of cleaned text
+  const fallback = cleaned.substring(0, 40).trim();
+  return (fallback || p.substring(0, 40)).charAt(0).toUpperCase() + (fallback || p.substring(0, 40)).slice(1);
+}
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const token = getToken();
   const headers: Record<string, string> = {
