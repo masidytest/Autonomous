@@ -316,27 +316,47 @@ export function ProjectDashboard() {
       <div
         style={{
           width: '100%',
-          backgroundColor: '#1a1a1a',
+          background: 'linear-gradient(90deg, #1a1a1a 0%, #2d1f3d 50%, #1a1a1a 100%)',
           padding: '10px 24px',
           textAlign: 'center',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 12,
         }}
       >
+        <span style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 6,
+          padding: '2px 10px',
+          fontSize: 11,
+          fontWeight: 700,
+          color: '#a78bfa',
+          backgroundColor: '#a78bfa15',
+          borderRadius: 4,
+          border: '1px solid #a78bfa30',
+          letterSpacing: '0.05em',
+          textTransform: 'uppercase',
+        }}>
+          NEW
+        </span>
         <span style={{ fontSize: 14, color: '#bbb' }}>
-          Masidy Agent — Autonomous AI Software Engineer
+          Powered by <strong style={{ color: '#e9d5ff' }}>Claude Opus 4.6</strong> — Anthropic's most advanced AI model for coding
         </span>
         <a
           href="/docs"
           onClick={(e) => { e.preventDefault(); navigate('/docs'); }}
           style={{
-            fontSize: 14,
-            color: '#fff',
+            fontSize: 13,
+            color: '#a78bfa',
             textDecoration: 'none',
-            marginLeft: 12,
+            fontWeight: 500,
           }}
           onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
           onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
         >
-          Learn more &rarr;
+          See what it can do &rarr;
         </a>
       </div>
 
@@ -353,20 +373,48 @@ export function ProjectDashboard() {
       >
         <div style={{ width: '100%', maxWidth: 720 }}>
           {/* Hero heading */}
-          <h1
-            style={{
-              fontFamily: "'Instrument Serif', Georgia, 'Times New Roman', serif",
-              fontSize: 'clamp(36px, 5vw, 52px)',
-              fontWeight: 400,
-              color: '#1a1a1a',
-              textAlign: 'center',
-              marginTop: 80,
-              marginBottom: 48,
-              lineHeight: 1.15,
-            }}
-          >
-            What can I build for you?
-          </h1>
+          <div style={{ textAlign: 'center', marginTop: 60, marginBottom: 40 }}>
+            {/* Opus badge */}
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '6px 16px',
+              backgroundColor: '#faf8ff',
+              border: '1px solid #e9d5ff',
+              borderRadius: 999,
+              marginBottom: 20,
+            }}>
+              <div style={{
+                width: 8, height: 8, borderRadius: '50%',
+                background: 'linear-gradient(135deg, #8b5cf6, #a78bfa)',
+                boxShadow: '0 0 8px #8b5cf640',
+              }} />
+              <span style={{ fontSize: 13, fontWeight: 600, color: '#7c3aed' }}>
+                Claude Opus 4.6
+              </span>
+              <span style={{ fontSize: 12, color: '#a78bfa' }}>
+                Most advanced AI for coding
+              </span>
+            </div>
+
+            <h1
+              style={{
+                fontFamily: "'Instrument Serif', Georgia, 'Times New Roman', serif",
+                fontSize: 'clamp(36px, 5vw, 52px)',
+                fontWeight: 400,
+                color: '#1a1a1a',
+                lineHeight: 1.15,
+                marginBottom: 12,
+              }}
+            >
+              What can I build for you?
+            </h1>
+            <p style={{ fontSize: 16, color: '#888', maxWidth: 520, margin: '0 auto', lineHeight: 1.6 }}>
+              The only AI agent that plans, codes, debugs, deploys, and iterates — autonomously.
+              Powered by Anthropic's flagship model.
+            </p>
+          </div>
 
           {/* Input card */}
           <div
@@ -500,6 +548,90 @@ export function ProjectDashboard() {
             ))}
           </div>
 
+          {/* ── Why Opus 4.6 — capabilities ── */}
+          <div style={{
+            marginTop: 48,
+            padding: '28px 24px',
+            background: 'linear-gradient(135deg, #faf8ff 0%, #f5f0ff 50%, #faf9f7 100%)',
+            borderRadius: 20,
+            border: '1px solid #e9d5ff40',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+              <div style={{
+                width: 28, height: 28, borderRadius: 8,
+                background: 'linear-gradient(135deg, #7c3aed, #a78bfa)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                </svg>
+              </div>
+              <span style={{ fontSize: 14, fontWeight: 700, color: '#1a1a1a' }}>
+                Why Masidy Agent + Opus 4.6
+              </span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+              {[
+                {
+                  title: 'Top-tier reasoning',
+                  desc: 'Opus 4.6 is Anthropic\'s most capable model — #1 on SWE-bench for real-world coding tasks. It understands complex requirements and writes production code.',
+                  badge: '#1 SWE-bench',
+                },
+                {
+                  title: 'Full autonomy',
+                  desc: 'Plans, writes, debugs, tests, and deploys — all by itself. 10 integrated tools: filesystem, terminal, browser, search, deploy, and more.',
+                  badge: '10 tools',
+                },
+                {
+                  title: 'vs. ChatGPT / Copilot',
+                  desc: 'ChatGPT suggests code. Copilot autocompletes. Masidy builds entire apps from a single prompt — then deploys them live.',
+                  badge: 'Full stack',
+                },
+              ].map((item) => (
+                <div key={item.title} style={{
+                  padding: '16px',
+                  backgroundColor: '#fff',
+                  borderRadius: 14,
+                  border: '1px solid #e8e5e0',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: '#1a1a1a' }}>{item.title}</span>
+                    <span style={{
+                      fontSize: 10, fontWeight: 700, color: '#7c3aed',
+                      backgroundColor: '#f5f0ff', padding: '2px 8px',
+                      borderRadius: 4, letterSpacing: '0.03em',
+                    }}>{item.badge}</span>
+                  </div>
+                  <p style={{ fontSize: 12, color: '#777', lineHeight: 1.6, margin: 0 }}>{item.desc}</p>
+                </div>
+              ))}
+            </div>
+
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              gap: 24, marginTop: 16, paddingTop: 16,
+              borderTop: '1px solid #e9d5ff30',
+            }}>
+              {[
+                { label: 'Plans & Thinks', icon: '🧠' },
+                { label: 'Writes Code', icon: '💻' },
+                { label: 'Runs Terminal', icon: '⚡' },
+                { label: 'Browses Web', icon: '🌐' },
+                { label: 'Deploys Live', icon: '🚀' },
+                { label: 'Debugs Errors', icon: '🔧' },
+              ].map((cap) => (
+                <div key={cap.label} style={{
+                  display: 'flex', alignItems: 'center', gap: 4,
+                  fontSize: 12, color: '#888',
+                }}>
+                  <span>{cap.icon}</span>
+                  <span>{cap.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
           {/* Recent projects */}
           {!loading && projects.length > 0 && (
             <div style={{ marginTop: 56 }}>
@@ -626,12 +758,14 @@ export function ProjectDashboard() {
               fontSize: 'clamp(28px, 4vw, 42px)',
               color: '#e0e0e0',
               lineHeight: 1.25,
-              maxWidth: 440,
+              maxWidth: 520,
             }}
           >
-            Less structure,
+            One prompt.
             <br />
-            more intelligence.
+            Full application.
+            <br />
+            <span style={{ fontSize: '0.6em', color: '#a78bfa' }}>Powered by Opus 4.6</span>
           </p>
         </div>
 

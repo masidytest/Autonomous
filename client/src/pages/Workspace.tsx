@@ -910,10 +910,49 @@ export function Workspace() {
               }}
             >
               {messages.length === 0 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#999', padding: 40 }}>
-                  <Sparkles size={32} color="#d97706" style={{ marginBottom: 12 }} />
-                  <p style={{ fontSize: 16, fontWeight: 500, color: '#666', marginBottom: 4 }}>What do you want to build?</p>
-                  <p style={{ fontSize: 13, color: '#bbb' }}>Describe your project and Masidy will build it for you</p>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#999', padding: 32 }}>
+                  {/* Opus 4.6 badge */}
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    padding: '5px 14px', marginBottom: 16,
+                    background: 'linear-gradient(135deg, #faf8ff, #f5f0ff)',
+                    border: '1px solid #e9d5ff',
+                    borderRadius: 999,
+                  }}>
+                    <div style={{
+                      width: 7, height: 7, borderRadius: '50%',
+                      background: 'linear-gradient(135deg, #8b5cf6, #a78bfa)',
+                      boxShadow: '0 0 6px #8b5cf640',
+                    }} />
+                    <span style={{ fontSize: 12, fontWeight: 600, color: '#7c3aed' }}>Claude Opus 4.6</span>
+                  </div>
+
+                  <Sparkles size={28} color="#d97706" style={{ marginBottom: 10 }} />
+                  <p style={{ fontSize: 17, fontWeight: 600, color: '#1a1a1a', marginBottom: 4 }}>What do you want to build?</p>
+                  <p style={{ fontSize: 13, color: '#999', maxWidth: 360, textAlign: 'center', lineHeight: 1.6, marginBottom: 20 }}>
+                    I plan, code, debug, and deploy complete apps — powered by the most advanced AI model for coding.
+                  </p>
+
+                  {/* Capability chips */}
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, justifyContent: 'center', maxWidth: 380 }}>
+                    {[
+                      { icon: '🧠', label: 'Plans architecture' },
+                      { icon: '💻', label: 'Writes full-stack code' },
+                      { icon: '⚡', label: 'Runs terminal' },
+                      { icon: '🌐', label: 'Browses & researches' },
+                      { icon: '🚀', label: 'Deploys to production' },
+                      { icon: '🔧', label: 'Auto-debugs errors' },
+                    ].map((cap) => (
+                      <span key={cap.label} style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 4,
+                        padding: '4px 10px', fontSize: 11, fontWeight: 500,
+                        color: '#777', backgroundColor: '#faf9f7',
+                        border: '1px solid #e8e5e0', borderRadius: 6,
+                      }}>
+                        <span>{cap.icon}</span> {cap.label}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               ) : (
                 <>
@@ -1303,10 +1342,13 @@ export function Workspace() {
                             <p style={{ fontSize: 15, fontWeight: 600, color: '#1a1a1a', marginBottom: 4 }}>
                               Building your project...
                             </p>
-                            <p style={{ fontSize: 13, color: '#888' }}>
+                            <p style={{ fontSize: 13, color: '#888', marginBottom: 2 }}>
                               {files.length > 0
                                 ? `${files.length} file${files.length > 1 ? 's' : ''} written — waiting for HTML to preview`
-                                : 'AI is planning and writing code'}
+                                : 'Opus 4.6 is planning and writing code'}
+                            </p>
+                            <p style={{ fontSize: 11, color: '#a78bfa' }}>
+                              Powered by Claude Opus 4.6
                             </p>
                           </div>
                           {/* Shimmer progress bar */}
