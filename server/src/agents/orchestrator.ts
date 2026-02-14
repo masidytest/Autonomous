@@ -11,106 +11,110 @@ import { BrowserTool } from '../tools/browser.js';
 import { SearchTool } from '../tools/search.js';
 import { DeployTool } from '../tools/deploy.js';
 
-const MAX_ITERATIONS = 25;
+const MAX_ITERATIONS = 20;
 
-const SYSTEM_PROMPT = `You are Masidy Agent — an autonomous AI software engineer. You build web applications from a single prompt.
+/**
+ * Build a dynamic system prompt that embeds the user's request directly
+ * so the AI cannot drift from it.
+ */
+function buildSystemPrompt(userRequest: string): string {
+  return `You are Masidy Agent. You build exactly what users ask for.
 
-## CRITICAL RULES — FOLLOW EXACTLY
+=== YOUR ASSIGNMENT ===
+The user wants: "${userRequest}"
+You MUST build exactly this. Not something else. Not a variation. EXACTLY this.
+========================
 
-### 1. STAY FOCUSED — ZERO DRIFTING
-- Build EXACTLY what the user asked for. If they say "crypto platform", you build a crypto platform — not a portfolio, not a todo app, not something else.
-- The project name, theme, colors, and category MUST match the user's request for the ENTIRE build.
-- Once you create a plan, EXECUTE it step by step without changing direction.
-- NEVER rename the project, switch themes, or change categories mid-build.
-- NEVER start over. NEVER rewrite files you already created from scratch.
+## ABSOLUTE RULES
 
-### 2. WRITE EACH FILE ONCE — COMPLETE AND FINAL
-- Think and plan BEFORE writing any file. Know exactly what goes in each file.
-- Write index.html ONCE with all the HTML structure, styling, and content.
-- Write each CSS/JS file ONCE with complete, final content.
-- If you must update a file later, make SMALL targeted changes — never rewrite from scratch.
-- Target 3-6 files total per project. No more.
+1. BUILD WHAT WAS ASKED — The project name, type, theme, and content must match "${userRequest}" exactly. If the user asked for a "crypto currency platform", every file you create must be about crypto currency. Do not build a search tool, a portfolio, a dashboard, or anything else.
 
-### 3. NO WASTED ACTIONS
-- NO browsing (the user sees your HTML live in the preview panel automatically).
-- NO dev servers (no python http.server, npm run dev, npx serve).
-- NO browsing localhost, 127.0.0.1, or file:// URLs.
-- NO terminal commands unless truly necessary (backend projects only).
-- NO reading files you just wrote — you already know the content.
+2. WRITE EACH FILE ONLY ONCE — Plan everything in your head first. Then write each file once with complete, final content. You get ONE chance per file. If you try to write the same file twice, it will be rejected.
 
-### 4. STATIC HTML + CDN ONLY
-Build as static HTML + CSS + JS using CDN libraries:
-- Files go directly in /workspace (e.g., /workspace/index.html). NO subdirectories like /workspace/my-project/.
-- index.html is ALWAYS the first file — it's what the preview displays.
+3. MAXIMUM 3 FILES — You create exactly these files:
+   - /workspace/index.html (the complete HTML page with ALL content, structure, and inline styles or Tailwind classes)
+   - /workspace/css/styles.css (additional CSS if needed)
+   - /workspace/js/app.js (JavaScript for interactivity)
+   That's it. No other files. No subdirectories.
 
-CDN libraries:
-- Tailwind: \`<script src="https://cdn.tailwindcss.com"></script>\`
-- React: \`<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>\` + ReactDOM + Babel
-- Vue: \`<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>\`
-- Chart.js: \`<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>\`
-- Three.js: \`<script src="https://unpkg.com/three@0.160/build/three.min.js"></script>\`
-- GSAP: \`<script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js"></script>\`
-- Lucide: \`<script src="https://unpkg.com/lucide@latest"></script>\`
-- Font Awesome: \`<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">\`
-- Google Fonts: \`<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">\`
-- Alpine.js: \`<script src="https://unpkg.com/alpinejs@3/dist/cdn.min.js" defer></script>\`
+4. EXACT WORKFLOW — Do these steps in order, nothing else:
+   Step 1: Call the "plan" tool with 3 steps (write index.html, write styles.css, write app.js)
+   Step 2: Call write_file for /workspace/index.html with the COMPLETE page
+   Step 3: Call write_file for /workspace/css/styles.css
+   Step 4: Call write_file for /workspace/js/app.js
+   Step 5: Send a brief summary message. STOP.
 
-### 5. EXACT WORKFLOW — NO DEVIATIONS
-1. **PLAN** — Create a plan with 3-6 steps that matches the user's request EXACTLY.
-2. **WRITE FILES** — Create index.html first (complete), then CSS, then JS. Each file written ONCE.
-3. **DONE** — Brief summary of what you built + 2-3 improvement ideas. Stop.
+5. FORBIDDEN ACTIONS:
+   - Do NOT call list_files or read_file (there are no existing files to read)
+   - Do NOT call browse (the preview panel shows your HTML automatically)
+   - Do NOT call run_command (no terminal needed for static sites)
+   - Do NOT call search_web (you already know how to build this)
+   - Do NOT rewrite any file — one write per file, period
+   - Do NOT start dev servers
+   - Do NOT create more than 3 files
 
-Do NOT add extra steps. Do NOT go back and rewrite. Do NOT browse. Just plan, write, summarize.
+## HOW TO BUILD
 
-## Quality
-- Modern, premium UI with clean typography and good spacing
-- Responsive and mobile-friendly
-- Consistent color scheme matching the project theme
-- Proper meta tags and viewport`;
+Use static HTML with CDN libraries. Available CDNs:
+- Tailwind: <script src="https://cdn.tailwindcss.com"></script>
+- Chart.js: <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+- Lucide Icons: <script src="https://unpkg.com/lucide@latest"></script>
+- Font Awesome: <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+- Google Fonts: <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+- GSAP: <script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js"></script>
+- Alpine.js: <script src="https://unpkg.com/alpinejs@3/dist/cdn.min.js" defer></script>
+
+## QUALITY
+- Modern, premium UI — the page should look professional and polished
+- Use Tailwind CSS for styling — use real, specific content related to "${userRequest}"
+- Responsive design, smooth animations, proper spacing
+- Real placeholder data that matches the theme (e.g., crypto prices for crypto, recipes for food apps, etc.)
+- The <title> must match what the user asked for
+
+## PERSONALITY
+- Brief and friendly. Don't over-explain.
+- After writing all files, give a 2-3 sentence summary and suggest 2 improvements.`;
+}
 
 const TOOL_DEFINITIONS: Anthropic.Tool[] = [
   {
     name: 'plan',
-    description: 'Create an execution plan. MUST be called first. The plan must match the user request EXACTLY — same project type, name, and theme throughout.',
+    description: 'Create an execution plan. Call this FIRST. Plan must have exactly 3 steps: write index.html, write styles.css, write app.js.',
     input_schema: {
       type: 'object' as const,
       properties: {
-        goal: { type: 'string', description: 'The overall goal — must match the user request exactly' },
+        goal: { type: 'string', description: 'Must match the user request exactly' },
         steps: {
           type: 'array',
           items: {
             type: 'object',
             properties: {
               title: { type: 'string' },
-              type: {
-                type: 'string',
-                enum: ['code', 'terminal', 'browser', 'file_write', 'file_read', 'search', 'deploy', 'think'],
-              },
+              type: { type: 'string', enum: ['file_write'] },
               description: { type: 'string' },
             },
             required: ['title', 'type', 'description'],
           },
         },
-        estimatedTime: { type: 'string', description: 'Estimated time to complete' },
       },
       required: ['goal', 'steps'],
     },
   },
   {
     name: 'write_file',
-    description: 'Write COMPLETE content to a file. Write each file ONCE with ALL its content. Do NOT rewrite files you already created. Create index.html first.',
+    description: 'Write a file. Each file can only be written ONCE. Write COMPLETE content — you will not get another chance.',
     input_schema: {
       type: 'object' as const,
       properties: {
-        path: { type: 'string', description: 'File path (relative to /workspace or absolute)' },
-        content: { type: 'string', description: 'COMPLETE file content — write everything in one go' },
+        path: { type: 'string', description: 'File path: /workspace/index.html, /workspace/css/styles.css, or /workspace/js/app.js' },
+        content: { type: 'string', description: 'Complete file content' },
       },
       required: ['path', 'content'],
     },
   },
   {
     name: 'read_file',
-    description: 'Read a file. Only use this to read files you need to UPDATE — never read files you just wrote.',
+    description: 'Read a file. Only use if explicitly asked to modify an existing project.',
     input_schema: {
       type: 'object' as const,
       properties: {
@@ -121,56 +125,26 @@ const TOOL_DEFINITIONS: Anthropic.Tool[] = [
   },
   {
     name: 'list_files',
-    description: 'List files in a directory.',
+    description: 'List files. Only use if explicitly asked to modify an existing project.',
     input_schema: {
       type: 'object' as const,
       properties: {
         path: { type: 'string', description: 'Directory path', default: '/workspace' },
-        recursive: { type: 'boolean', description: 'List recursively', default: false },
+        recursive: { type: 'boolean', default: false },
       },
       required: [],
     },
   },
   {
     name: 'run_command',
-    description: 'Run a shell command. ONLY use for backend projects that truly need npm install. For frontend web apps, use CDN libraries and write_file instead. NEVER start dev servers.',
+    description: 'Run a shell command. Only for backend projects. Never use for frontend/static sites.',
     input_schema: {
       type: 'object' as const,
       properties: {
-        command: { type: 'string', description: 'Shell command to execute' },
-        timeout: { type: 'number', description: 'Timeout in ms (default 120000)' },
+        command: { type: 'string', description: 'Shell command' },
+        timeout: { type: 'number', description: 'Timeout in ms' },
       },
       required: ['command'],
-    },
-  },
-  {
-    name: 'search_web',
-    description: 'Search the web for information. Use sparingly — only when you need specific technical info.',
-    input_schema: {
-      type: 'object' as const,
-      properties: {
-        query: { type: 'string', description: 'Search query' },
-      },
-      required: ['query'],
-    },
-  },
-  {
-    name: 'browse',
-    description: 'Browse an EXTERNAL public website for research ONLY. NEVER use for previewing your own work. NEVER navigate to localhost, 127.0.0.1, or file:// URLs. The preview panel shows your HTML automatically.',
-    input_schema: {
-      type: 'object' as const,
-      properties: {
-        action: {
-          type: 'string',
-          enum: ['navigate', 'screenshot', 'click', 'type', 'scroll', 'wait'],
-          description: 'Browser action to perform',
-        },
-        url: { type: 'string', description: 'URL to navigate to (for navigate action)' },
-        selector: { type: 'string', description: 'CSS selector (for click/type actions)' },
-        text: { type: 'string', description: 'Text to type (for type action)' },
-        waitTime: { type: 'number', description: 'Milliseconds to wait (for wait action)' },
-      },
-      required: ['action'],
     },
   },
   {
@@ -179,9 +153,9 @@ const TOOL_DEFINITIONS: Anthropic.Tool[] = [
     input_schema: {
       type: 'object' as const,
       properties: {
-        buildCommand: { type: 'string', description: 'Build command (e.g., npm run build)' },
-        startCommand: { type: 'string', description: 'Start command (e.g., npm start)' },
-        port: { type: 'number', description: 'Application port (default 3000)' },
+        buildCommand: { type: 'string' },
+        startCommand: { type: 'string' },
+        port: { type: 'number' },
       },
       required: [],
     },
@@ -192,207 +166,12 @@ const TOOL_DEFINITIONS: Anthropic.Tool[] = [
     input_schema: {
       type: 'object' as const,
       properties: {
-        question: { type: 'string', description: 'Question to ask the user' },
+        question: { type: 'string', description: 'Question to ask' },
       },
       required: ['question'],
     },
   },
-  {
-    name: 'think',
-    description: 'Think about your approach BEFORE writing code. Use this to plan file structure and content.',
-    input_schema: {
-      type: 'object' as const,
-      properties: {
-        thought: { type: 'string', description: 'Your reasoning and analysis' },
-      },
-      required: ['thought'],
-    },
-  },
 ];
-
-/* ── Project Templates ── */
-
-interface ProjectTemplate {
-  files: { path: string; content: string }[];
-}
-
-function detectProjectType(prompt: string): string {
-  const p = prompt.toLowerCase();
-  if (p.includes('react') && !p.includes('vue') && !p.includes('svelte')) return 'react';
-  if (p.includes('vue')) return 'vue';
-  if (p.includes('three.js') || p.includes('3d') || p.includes('threejs')) return 'threejs';
-  if (p.includes('game')) return 'game';
-  if (p.includes('dashboard') || p.includes('admin')) return 'dashboard';
-  if (p.includes('api') || p.includes('backend') || p.includes('server') || p.includes('express') || p.includes('flask')) return 'backend';
-  return 'static';
-}
-
-function getTemplate(type: string): ProjectTemplate {
-  switch (type) {
-    case 'react':
-      return {
-        files: [
-          {
-            path: '/workspace/index.html',
-            content: `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>App</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <style>body { font-family: 'Inter', sans-serif; }</style>
-</head>
-<body>
-  <div id="root"></div>
-  <script type="text/babel" src="js/app.jsx"></script>
-</body>
-</html>`,
-          },
-        ],
-      };
-
-    case 'dashboard':
-      return {
-        files: [
-          {
-            path: '/workspace/index.html',
-            content: `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <style>body { font-family: 'Inter', sans-serif; }</style>
-</head>
-<body class="bg-slate-50">
-  <div id="app"></div>
-  <script src="js/app.js"></script>
-</body>
-</html>`,
-          },
-        ],
-      };
-
-    case 'threejs':
-      return {
-        files: [
-          {
-            path: '/workspace/index.html',
-            content: `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>3D Experience</title>
-  <script src="https://unpkg.com/three@0.160/build/three.min.js"></script>
-  <style>body { margin: 0; overflow: hidden; } canvas { display: block; }</style>
-</head>
-<body>
-  <script src="js/app.js"></script>
-</body>
-</html>`,
-          },
-        ],
-      };
-
-    case 'game':
-      return {
-        files: [
-          {
-            path: '/workspace/index.html',
-            content: `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Game</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: #0a0a0a; display: flex; align-items: center; justify-content: center; min-height: 100vh; font-family: sans-serif; }
-    canvas { border-radius: 8px; box-shadow: 0 0 40px rgba(99,102,241,0.2); }
-  </style>
-</head>
-<body>
-  <canvas id="game"></canvas>
-  <script src="js/game.js"></script>
-</body>
-</html>`,
-          },
-        ],
-      };
-
-    case 'vue':
-      return {
-        files: [
-          {
-            path: '/workspace/index.html',
-            content: `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>App</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <style>body { font-family: 'Inter', sans-serif; }</style>
-</head>
-<body>
-  <div id="app"></div>
-  <script src="js/app.js"></script>
-</body>
-</html>`,
-          },
-        ],
-      };
-
-    case 'backend':
-      return { files: [] };
-
-    default: // static
-      return {
-        files: [
-          {
-            path: '/workspace/index.html',
-            content: `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Website</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <style>body { font-family: 'Inter', sans-serif; }</style>
-</head>
-<body class="bg-white text-slate-900">
-  <div id="app"></div>
-  <link rel="stylesheet" href="css/styles.css">
-  <script src="js/app.js"></script>
-</body>
-</html>`,
-          },
-          {
-            path: '/workspace/css/styles.css',
-            content: `/* Custom styles */\n`,
-          },
-          {
-            path: '/workspace/js/app.js',
-            content: `// App logic\ndocument.addEventListener('DOMContentLoaded', () => {\n  if (window.lucide) lucide.createIcons();\n});\n`,
-          },
-        ],
-      };
-  }
-}
 
 /* ── Orchestrator ── */
 
@@ -415,7 +194,8 @@ export class AgentOrchestrator {
   private startTime = 0;
   private totalTokens = 0;
   private activeSkills: { name: string; content: string }[] = [];
-  private writtenFiles: Set<string> = new Set(); // Track files already written
+  private writtenFiles: Set<string> = new Set();
+  private userPrompt: string = '';
 
   constructor(io: SocketServer, projectId: string, projectSlug: string) {
     this.io = io;
@@ -432,26 +212,27 @@ export class AgentOrchestrator {
     });
   }
 
-  /** Inject active skills from the client */
   setSkills(skills: { name: string; content: string }[]) {
     this.activeSkills = skills;
   }
 
-  /** Build the full system prompt with active skills injected */
-  private buildSystemPrompt(): string {
-    if (this.activeSkills.length === 0) return SYSTEM_PROMPT;
+  private getSystemPrompt(): string {
+    let prompt = buildSystemPrompt(this.userPrompt);
 
-    const skillsSection = this.activeSkills
-      .map((s) => `### ${s.name}\n${s.content}`)
-      .join('\n\n');
+    if (this.activeSkills.length > 0) {
+      const skillsSection = this.activeSkills
+        .map((s) => `### ${s.name}\n${s.content}`)
+        .join('\n\n');
+      prompt += `\n\n## Active Skills\n${skillsSection}`;
+    }
 
-    return `${SYSTEM_PROMPT}\n\n## Active Skills (${this.activeSkills.length} enabled)\n${skillsSection}`;
+    return prompt;
   }
 
   async execute(prompt: string): Promise<void> {
     this.startTime = Date.now();
+    this.userPrompt = prompt;
 
-    // Create task in DB
     const [task] = await db
       .insert(tasks)
       .values({
@@ -462,25 +243,18 @@ export class AgentOrchestrator {
       .returning();
 
     this.taskId = task.id;
-
-    // Emit task started
     this.emit({ type: 'task:started', taskId: task.id, projectId: this.projectId });
 
     try {
-      // Start sandbox
       const containerId = await this.sandbox.start();
       await db
         .update(projects)
         .set({ containerId })
         .where(eq(projects.id, this.projectId));
 
-      // Scaffold template files based on the prompt
-      await this.scaffoldTemplate(prompt);
-
-      // Run the agent loop
+      // NO template scaffolding — let the AI build from scratch with the user's exact request
       await this.agentLoop(prompt);
 
-      // Success
       const duration = Date.now() - this.startTime;
       await db
         .update(tasks)
@@ -520,77 +294,19 @@ export class AgentOrchestrator {
         error: errorMsg,
       });
     } finally {
-      // Cleanup
       await this.browserTool.close().catch(() => {});
       await this.sandbox.stop().catch(() => {});
     }
   }
 
-  /** Scaffold template files into the sandbox and DB based on prompt analysis */
-  private async scaffoldTemplate(prompt: string): Promise<void> {
-    const projectType = detectProjectType(prompt);
-    const template = getTemplate(projectType);
-
-    if (template.files.length === 0) return;
-
-    console.log(`[Orchestrator] Scaffolding ${projectType} template (${template.files.length} files)`);
-
-    for (const file of template.files) {
-      // Write to sandbox
-      await this.sandbox.writeFile(file.path, file.content);
-
-      // Detect language
-      const ext = file.path.split('.').pop() || '';
-      const langMap: Record<string, string> = {
-        ts: 'typescript', tsx: 'typescript', js: 'javascript', jsx: 'javascript',
-        py: 'python', html: 'html', css: 'css', json: 'json',
-        md: 'markdown', yml: 'yaml', yaml: 'yaml',
-      };
-      const language = langMap[ext.toLowerCase()] || ext;
-
-      // Save to DB
-      const existing = await db.query.files.findFirst({
-        where: (f, { and, eq: e }) =>
-          and(e(f.projectId, this.projectId), e(f.path, file.path)),
-      });
-      if (!existing) {
-        await db.insert(filesTable).values({
-          projectId: this.projectId,
-          path: file.path,
-          content: file.content,
-          language,
-        });
-      }
-
-      // Emit to client so preview updates immediately
-      this.emit({
-        type: 'file:changed',
-        projectId: this.projectId,
-        path: file.path,
-        content: file.content,
-        language,
-      });
-
-      // Track that this file was scaffolded
-      this.writtenFiles.add(file.path);
-    }
-  }
-
   private async agentLoop(initialPrompt: string): Promise<void> {
-    // Inject the user's request as a focused context message
-    const focusedPrompt = `BUILD THIS: "${initialPrompt}"
-
-RULES FOR THIS BUILD:
-- Stay focused on EXACTLY this request. Do not change the project type, name, or theme.
-- Write each file ONCE with COMPLETE content. Do not rewrite files.
-- Follow your plan step by step. Do not deviate or add extra steps.
-- When done, summarize briefly and stop.`;
-
     const conversationMessages: Anthropic.MessageParam[] = [
-      { role: 'user', content: focusedPrompt },
+      {
+        role: 'user',
+        content: `Build this: ${initialPrompt}\n\nRemember: plan first (3 steps), then write exactly 3 files (index.html, styles.css, app.js), then summarize. Each file written ONCE with complete content. Every file must be about "${initialPrompt}" — not about anything else.`,
+      },
     ];
 
-    // Save initial user message
     if (this.taskId) {
       await db.insert(messages).values({
         taskId: this.taskId,
@@ -604,23 +320,18 @@ RULES FOR THIS BUILD:
         throw new Error('Task cancelled by user');
       }
 
-      // Call Claude API with retry
       const response = await this.callClaudeWithRetry(conversationMessages);
 
-      // Track token usage
       if (response.usage) {
         this.totalTokens += response.usage.input_tokens + response.usage.output_tokens;
       }
 
-      // Add assistant response to conversation
       conversationMessages.push({
         role: 'assistant',
         content: response.content,
       });
 
-      // Check stop reason
       if (response.stop_reason === 'end_turn') {
-        // Extract final text message
         const textBlocks = response.content.filter(
           (b): b is Anthropic.TextBlock => b.type === 'text'
         );
@@ -632,14 +343,12 @@ RULES FOR THIS BUILD:
             content: finalMessage,
           });
 
-          // Save message
           if (this.taskId) {
             await db.insert(messages).values({
               taskId: this.taskId,
               role: 'assistant',
               content: finalMessage,
             });
-
             await db
               .update(tasks)
               .set({ result: finalMessage })
@@ -649,13 +358,11 @@ RULES FOR THIS BUILD:
         return;
       }
 
-      // Process tool uses
       if (response.stop_reason === 'tool_use') {
         const toolUseBlocks = response.content.filter(
           (b): b is Anthropic.ToolUseBlock => b.type === 'tool_use'
         );
 
-        // Also emit any text blocks as thinking
         const textBlocks = response.content.filter(
           (b): b is Anthropic.TextBlock => b.type === 'text'
         );
@@ -672,8 +379,6 @@ RULES FOR THIS BUILD:
         for (const toolUse of toolUseBlocks) {
           const stepStart = Date.now();
           const title = this.getStepTitle(toolUse.name, toolUse.input as Record<string, any>);
-
-          // Determine step type
           const stepType = this.getStepType(toolUse.name);
 
           const stepUpdate: StepUpdate = {
@@ -683,11 +388,9 @@ RULES FOR THIS BUILD:
             status: 'running',
           };
 
-          // Emit step started
           this.emit({ type: 'step:started', taskId: this.taskId!, step: stepUpdate });
 
           try {
-            // Execute the tool
             const result = await this.executeTool(
               toolUse.name,
               toolUse.input as Record<string, any>
@@ -695,7 +398,6 @@ RULES FOR THIS BUILD:
 
             const duration = Date.now() - stepStart;
 
-            // Save step to DB
             if (this.taskId) {
               await db.insert(steps).values({
                 taskId: this.taskId,
@@ -709,7 +411,6 @@ RULES FOR THIS BUILD:
               });
             }
 
-            // Emit step completed/failed
             const completedStep: StepUpdate = {
               ...stepUpdate,
               status: result.success ? 'completed' : 'failed',
@@ -728,23 +429,10 @@ RULES FOR THIS BUILD:
               });
             }
 
-            // Build tool result for Claude
-            let resultText = result.success
-              ? result.output
-              : `Error: ${result.error}\n${result.output}`;
-
-            // If a file was rewritten, warn Claude
-            if (toolUse.name === 'write_file') {
-              const filePath = (toolUse.input as any).path;
-              if (this.writtenFiles.has(filePath)) {
-                resultText += `\n\n⚠️ WARNING: You rewrote "${filePath}" which was already written. Do NOT rewrite files again. Continue with your next step.`;
-              }
-            }
-
             toolResults.push({
               type: 'tool_result',
               tool_use_id: toolUse.id,
-              content: resultText.substring(0, 50000),
+              content: (result.success ? result.output : `Error: ${result.error}\n${result.output}`).substring(0, 50000),
             });
           } catch (error: any) {
             const duration = Date.now() - stepStart;
@@ -780,7 +468,6 @@ RULES FOR THIS BUILD:
           this.stepIndex++;
         }
 
-        // Add tool results to conversation
         conversationMessages.push({
           role: 'user',
           content: toolResults,
@@ -788,7 +475,7 @@ RULES FOR THIS BUILD:
       }
     }
 
-    throw new Error('Agent exceeded maximum iterations (25). Task may be too complex.');
+    throw new Error('Agent exceeded maximum iterations.');
   }
 
   private async callClaudeWithRetry(
@@ -800,7 +487,7 @@ RULES FOR THIS BUILD:
         return await this.anthropic.messages.create({
           model: process.env.AI_MODEL || 'claude-sonnet-4-5-20250929',
           max_tokens: 16384,
-          system: this.buildSystemPrompt(),
+          system: this.getSystemPrompt(),
           tools: TOOL_DEFINITIONS,
           messages: conversationMessages,
         });
@@ -808,43 +495,23 @@ RULES FOR THIS BUILD:
         const status = error.status || error.statusCode;
         const msg = error.message || '';
 
-        // Billing / credit errors — don't retry
         if (status === 400 && (msg.includes('credit balance') || msg.includes('billing'))) {
-          throw new Error(
-            'Anthropic API credit balance is too low. Please check your API key and billing at console.anthropic.com.'
-          );
+          throw new Error('Anthropic API credit balance too low. Check billing at console.anthropic.com.');
         }
-
-        // Invalid API key — don't retry
         if (status === 401) {
-          throw new Error(
-            'Invalid Anthropic API key. Please verify your ANTHROPIC_API_KEY environment variable.'
-          );
+          throw new Error('Invalid Anthropic API key.');
         }
-
-        // Rate limit — retry with backoff
         if (status === 429 && attempt < retries) {
-          const delay = Math.pow(2, attempt + 1) * 1000;
-          console.log(`Rate limited. Retrying in ${delay}ms...`);
-          await new Promise((r) => setTimeout(r, delay));
+          await new Promise((r) => setTimeout(r, Math.pow(2, attempt + 1) * 1000));
           continue;
         }
-
-        // Overloaded — retry with backoff
         if (status === 529 && attempt < retries) {
-          const delay = Math.pow(2, attempt + 1) * 2000;
-          console.log(`API overloaded. Retrying in ${delay}ms...`);
-          await new Promise((r) => setTimeout(r, delay));
+          await new Promise((r) => setTimeout(r, Math.pow(2, attempt + 1) * 2000));
           continue;
         }
-
-        // Model not found
         if (status === 404) {
-          throw new Error(
-            `AI model "${process.env.AI_MODEL || 'claude-sonnet-4-5-20250929'}" not found. Check the AI_MODEL environment variable.`
-          );
+          throw new Error(`AI model not found. Check AI_MODEL env var.`);
         }
-
         throw error;
       }
     }
@@ -871,31 +538,31 @@ RULES FOR THIS BUILD:
         this.emit({ type: 'task:planning', taskId: this.taskId!, plan });
         return {
           success: true,
-          output: `Plan created with ${plan.steps.length} steps. Now execute each step IN ORDER. Write each file ONCE with complete content. Do NOT deviate from this plan.`,
+          output: `Plan created. Now write the 3 files in order: index.html, styles.css, app.js. Each file ONCE with COMPLETE content about "${this.userPrompt}".`,
         };
       }
 
       case 'write_file': {
         const filePath = input.path as string;
 
-        // Track file writes
-        const isRewrite = this.writtenFiles.has(filePath);
-        this.writtenFiles.add(filePath);
-
-        if (isRewrite) {
-          console.log(`[Orchestrator] WARNING: File "${filePath}" being rewritten (was already written)`);
+        // HARD BLOCK: reject rewrites
+        if (this.writtenFiles.has(filePath)) {
+          return {
+            success: false,
+            output: '',
+            error: `BLOCKED: "${filePath}" was already written. You cannot rewrite files. Move to the next file or finish with a summary.`,
+          };
         }
+
+        this.writtenFiles.add(filePath);
 
         const result = await this.fsTool.writeFile(filePath, input.content);
         if (result.success) {
-          // Detect language from extension
           const ext = filePath.split('.').pop() || '';
           const langMap: Record<string, string> = {
             ts: 'typescript', tsx: 'typescript', js: 'javascript', jsx: 'javascript',
-            py: 'python', rs: 'rust', go: 'go', java: 'java',
-            html: 'html', css: 'css', scss: 'scss', json: 'json',
-            md: 'markdown', yml: 'yaml', yaml: 'yaml', toml: 'toml',
-            sql: 'sql', sh: 'shell', bash: 'shell', dockerfile: 'dockerfile',
+            py: 'python', html: 'html', css: 'css', json: 'json',
+            md: 'markdown', yml: 'yaml', yaml: 'yaml',
           };
           const language = langMap[ext.toLowerCase()] || ext;
 
@@ -907,7 +574,6 @@ RULES FOR THIS BUILD:
             language,
           });
 
-          // Save file to DB
           if (this.taskId) {
             const existing = await db.query.files.findFirst({
               where: (f, { and, eq: e }) =>
@@ -954,13 +620,12 @@ RULES FOR THIS BUILD:
       }
 
       case 'browse': {
-        // Block localhost/file browsing
         const url = (input.url || '').toLowerCase();
         if (url.includes('localhost') || url.includes('127.0.0.1') || url.startsWith('file://')) {
           return {
             success: false,
             output: '',
-            error: 'Cannot browse localhost or file:// URLs. The preview panel shows your HTML automatically. Continue with your next step.',
+            error: 'Cannot browse localhost/file URLs. The preview shows your HTML automatically.',
           };
         }
 
@@ -973,11 +638,7 @@ RULES FOR THIS BUILD:
             imageBase64: result.metadata.screenshot as string,
           });
         }
-        return {
-          success: result.success,
-          output: result.output,
-          error: result.error,
-        };
+        return { success: result.success, output: result.output, error: result.error };
       }
 
       case 'deploy': {
@@ -999,23 +660,11 @@ RULES FOR THIS BUILD:
           taskId: this.taskId!,
           question: input.question,
         });
-
-        // Wait for user response
         const answer = await new Promise<string>((resolve) => {
           this.pauseResolver = resolve;
         });
-
         this.paused = false;
         return { success: true, output: `User answered: ${answer}` };
-      }
-
-      case 'think': {
-        this.emit({
-          type: 'agent:thinking',
-          taskId: this.taskId!,
-          thought: input.thought,
-        });
-        return { success: true, output: 'Continue with the next step in your plan.' };
       }
 
       default:
@@ -1058,7 +707,6 @@ RULES FOR THIS BUILD:
       browse: 'browser',
       deploy: 'deploy',
       ask_user: 'ask_user',
-      think: 'think',
     };
     return mapping[toolName] || 'think';
   }
@@ -1072,19 +720,17 @@ RULES FOR THIS BUILD:
       case 'read_file':
         return `Reading ${input.path}`;
       case 'list_files':
-        return `Listing files in ${input.path || '/workspace'}`;
+        return `Listing files`;
       case 'run_command':
         return `Running: ${input.command?.substring(0, 60) || 'command'}`;
       case 'search_web':
         return `Searching: ${input.query?.substring(0, 60) || 'web'}`;
       case 'browse':
-        return `Browser: ${input.action}${input.url ? ` ${input.url.substring(0, 40)}` : ''}`;
+        return `Browsing: ${input.url?.substring(0, 40) || ''}`;
       case 'deploy':
         return 'Deploying application';
       case 'ask_user':
-        return 'Asking user a question';
-      case 'think':
-        return 'Thinking...';
+        return 'Asking user';
       default:
         return toolName;
     }
