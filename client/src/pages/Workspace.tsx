@@ -57,6 +57,44 @@ const panelTabs = [
   { id: 'clipboard' as const, label: 'Clipboard', icon: Copy, showLabel: false },
 ];
 
+/* Inject keyframe animations once */
+const animStyleId = 'masidy-build-anims';
+if (typeof document !== 'undefined' && !document.getElementById(animStyleId)) {
+  const style = document.createElement('style');
+  style.id = animStyleId;
+  style.textContent = `
+    @keyframes stepSlideIn {
+      from { opacity: 0; transform: translateX(-8px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes stepFadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes stepPulse {
+      0%, 100% { opacity: 0.4; transform: scale(1); }
+      50% { opacity: 0.8; transform: scale(1.15); }
+    }
+    @keyframes stepBlink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+    @keyframes thinkDot {
+      0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+      40% { opacity: 1; transform: scale(1.2); }
+    }
+    @keyframes progressShimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+  `;
+  document.head.appendChild(style);
+}
+
 export function Workspace() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -312,6 +350,41 @@ export function Workspace() {
     setBookmarked(!bookmarked);
   }
 
+  /* ── Build a live preview blob URL from written files ── */
+  const previewBlobUrl = (() => {
+    if (files.length === 0) return null;
+    const htmlFile = files.find(f => f.path.endsWith('index.html'));
+    if (!htmlFile) return null;
+
+    let html = htmlFile.content;
+    // Inject CSS files inline
+    const cssFiles = files.filter(f => f.path.endsWith('.css'));
+    for (const css of cssFiles) {
+      const fileName = css.path.split('/').pop() || '';
+      // Replace link tags referencing this CSS file
+      const linkRegex = new RegExp(`<link[^>]*href=["'][^"']*${fileName.replace('.', '\\.')}["'][^>]*>`, 'gi');
+      html = html.replace(linkRegex, `<style>${css.content}</style>`);
+    }
+    // If CSS wasn't linked, inject at end of head
+    if (cssFiles.length > 0 && !html.includes('<style>')) {
+      const allCss = cssFiles.map(f => f.content).join('\n');
+      html = html.replace('</head>', `<style>${allCss}</style></head>`);
+    }
+    // Inject JS files inline
+    const jsFiles = files.filter(f => f.path.endsWith('.js') && !f.path.includes('server') && !f.path.includes('config') && !f.path.includes('vite') && !f.path.includes('tailwind') && !f.path.includes('postcss'));
+    for (const js of jsFiles) {
+      const fileName = js.path.split('/').pop() || '';
+      const scriptRegex = new RegExp(`<script[^>]*src=["'][^"']*${fileName.replace('.', '\\.')}["'][^>]*>\\s*</script>`, 'gi');
+      html = html.replace(scriptRegex, `<script>${js.content}</script>`);
+    }
+    try {
+      const blob = new Blob([html], { type: 'text/html' });
+      return URL.createObjectURL(blob);
+    } catch {
+      return null;
+    }
+  })();
+
   /* ── Step status icon ── */
   function StepIcon({ status }: { status: string }) {
     if (status === 'completed') return <CheckCircle2 size={16} color="#22c55e" />;
@@ -345,6 +418,19 @@ export function Workspace() {
     }
 
     if (msg.role === 'step' && msg.step) {
+      const isRunning = msg.step.status === 'running';
+      const isCompleted = msg.step.status === 'completed';
+      const isFailed = msg.step.status === 'failed';
+      const isFileWrite = msg.step.title?.startsWith('Writing ');
+      const isTerminal = msg.step.title?.startsWith('Running:');
+      const isPlan = msg.step.title?.startsWith('Planning:');
+      const isDeploy = msg.step.title?.startsWith('Deploying');
+      const isThinking = msg.step.title === 'Thinking...';
+      const isAskUser = msg.step.title?.startsWith('Asking');
+
+      // Pick accent color based on type
+      const accentColor = isFailed ? '#ef4444' : isDeploy ? '#8b5cf6' : isFileWrite ? '#10b981' : isTerminal ? '#f59e0b' : isPlan ? '#3b82f6' : isThinking ? '#6366f1' : isAskUser ? '#d97706' : '#3b82f6';
+
       return (
         <div
           key={msg.id}
@@ -352,31 +438,54 @@ export function Workspace() {
             display: 'flex',
             alignItems: 'flex-start',
             gap: 10,
-            marginBottom: 6,
-            padding: '8px 12px',
-            backgroundColor: msg.step.status === 'running' ? '#f8f6f3' : 'transparent',
+            marginBottom: 4,
+            padding: '7px 12px',
             borderRadius: 10,
-            transition: 'background-color 0.2s',
+            borderLeft: isRunning ? `2px solid ${accentColor}` : '2px solid transparent',
+            backgroundColor: isRunning ? `${accentColor}08` : 'transparent',
+            animation: isRunning ? 'stepSlideIn 0.3s ease-out' : 'stepFadeIn 0.4s ease-out',
+            transition: 'all 0.3s ease',
+            opacity: isCompleted ? 0.7 : 1,
           }}
         >
-          <div style={{ marginTop: 2 }}>
+          <div style={{ marginTop: 2, position: 'relative' }}>
+            {isRunning && (
+              <div style={{
+                position: 'absolute',
+                inset: -3,
+                borderRadius: '50%',
+                backgroundColor: `${accentColor}20`,
+                animation: 'stepPulse 2s ease-in-out infinite',
+              }} />
+            )}
             <StepIcon status={msg.step.status} />
           </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 13, fontWeight: 500, color: '#444' }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{
+              fontSize: 13,
+              fontWeight: isRunning ? 600 : 500,
+              color: isFailed ? '#ef4444' : isRunning ? '#1a1a1a' : '#666',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              transition: 'color 0.3s',
+            }}>
               {msg.step.title}
             </div>
-            {msg.step.reasoning && (
-              <div style={{ fontSize: 12, color: '#999', marginTop: 2 }}>
-                {msg.step.reasoning}
-              </div>
-            )}
-            {msg.step.durationMs && msg.step.status === 'completed' && (
-              <div style={{ fontSize: 11, color: '#bbb', marginTop: 2 }}>
+            {msg.step.durationMs != null && isCompleted && (
+              <div style={{ fontSize: 11, color: '#bbb', marginTop: 1 }}>
                 {(msg.step.durationMs / 1000).toFixed(1)}s
               </div>
             )}
           </div>
+          {isRunning && (
+            <div style={{
+              width: 6, height: 6, borderRadius: '50%',
+              backgroundColor: accentColor,
+              animation: 'stepBlink 1.5s ease-in-out infinite',
+              flexShrink: 0, marginTop: 7,
+            }} />
+          )}
         </div>
       );
     }
@@ -389,15 +498,21 @@ export function Workspace() {
             display: 'flex',
             alignItems: 'center',
             gap: 8,
-            marginBottom: 8,
+            marginBottom: 6,
             padding: '8px 12px',
             fontSize: 13,
-            color: '#999',
+            color: '#6366f1',
             fontStyle: 'italic',
+            animation: 'stepFadeIn 0.3s ease-out',
+            borderLeft: '2px solid #6366f120',
           }}
         >
-          <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
-          {msg.content}
+          <div style={{ display: 'flex', gap: 3 }}>
+            <div style={{ width: 4, height: 4, borderRadius: '50%', backgroundColor: '#6366f1', animation: 'thinkDot 1.4s ease-in-out infinite', animationDelay: '0s' }} />
+            <div style={{ width: 4, height: 4, borderRadius: '50%', backgroundColor: '#6366f1', animation: 'thinkDot 1.4s ease-in-out infinite', animationDelay: '0.2s' }} />
+            <div style={{ width: 4, height: 4, borderRadius: '50%', backgroundColor: '#6366f1', animation: 'thinkDot 1.4s ease-in-out infinite', animationDelay: '0.4s' }} />
+          </div>
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{msg.content}</span>
         </div>
       );
     }
@@ -527,6 +642,10 @@ export function Workspace() {
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f5f3ef' }}>
           {browserScreenshot ? (
             <img src={`data:image/png;base64,${browserScreenshot.imageBase64}`} alt="Preview" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+          ) : deployUrl ? (
+            <iframe src={deployUrl} title="Live preview" style={{ width: '100%', height: '100%', border: 'none' }} sandbox="allow-scripts allow-same-origin allow-popups allow-forms" />
+          ) : previewBlobUrl ? (
+            <iframe key={previewBlobUrl} src={previewBlobUrl} title="Local preview" style={{ width: '100%', height: '100%', border: 'none' }} sandbox="allow-scripts allow-same-origin" />
           ) : (
             <p style={{ color: '#999' }}>No preview available yet</p>
           )}
@@ -626,18 +745,23 @@ export function Workspace() {
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: 4,
+                  gap: 5,
                   fontSize: 11,
-                  fontWeight: 500,
-                  color: '#3b82f6',
-                  backgroundColor: '#eff6ff',
-                  padding: '2px 8px',
-                  borderRadius: 4,
-                  marginLeft: 4,
+                  fontWeight: 600,
+                  color: '#6366f1',
+                  background: 'linear-gradient(135deg, #eef2ff, #f5f3ff)',
+                  padding: '3px 10px',
+                  borderRadius: 6,
+                  marginLeft: 6,
+                  border: '1px solid #c7d2fe',
                 }}
               >
-                <Loader2 size={10} style={{ animation: 'spin 1s linear infinite' }} />
-                Running
+                <div style={{
+                  width: 6, height: 6, borderRadius: '50%',
+                  backgroundColor: '#6366f1',
+                  animation: 'stepBlink 1.5s ease-in-out infinite',
+                }} />
+                Building
               </span>
             )}
           </div>
@@ -1001,7 +1125,7 @@ export function Workspace() {
                     minWidth: 100,
                   }}
                 >
-                  {browserScreenshot?.url || previewUrl}
+                  {deployUrl || browserScreenshot?.url || (previewBlobUrl ? 'local://preview' : previewUrl)}
                 </div>
 
                 {/* Action buttons */}
@@ -1014,7 +1138,7 @@ export function Workspace() {
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                {deployUrl && (
+                {deployUrl ? (
                   <a
                     href={deployUrl}
                     target="_blank"
@@ -1037,7 +1161,25 @@ export function Workspace() {
                     <ExternalLink size={12} />
                     Live
                   </a>
-                )}
+                ) : previewBlobUrl ? (
+                  <span
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      padding: '5px 10px',
+                      fontSize: 11,
+                      fontWeight: 600,
+                      color: '#6366f1',
+                      backgroundColor: '#eef2ff',
+                      border: '1px solid #c7d2fe',
+                      borderRadius: 6,
+                    }}
+                  >
+                    <Eye size={11} />
+                    Preview
+                  </span>
+                ) : null}
                 <button
                   onClick={handleDownloadZip}
                   style={{
@@ -1103,6 +1245,14 @@ export function Workspace() {
                       title="Live preview"
                       style={{ width: '100%', height: '100%', border: 'none' }}
                       sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+                    />
+                  ) : previewBlobUrl ? (
+                    <iframe
+                      key={previewBlobUrl}
+                      src={previewBlobUrl}
+                      title="Local preview"
+                      style={{ width: '100%', height: '100%', border: 'none' }}
+                      sandbox="allow-scripts allow-same-origin"
                     />
                   ) : (
                     <div style={{ textAlign: 'center', padding: 40 }}>
@@ -1417,15 +1567,22 @@ function TaskProgressCard({
 }) {
   const [expanded, setExpanded] = useState(false);
   const completed = steps.filter((s) => s.status === 'completed').length;
+  const failed = steps.filter((s) => s.status === 'failed').length;
   const running = steps.some((s) => s.status === 'running');
+  const progress = steps.length > 0 ? (completed / steps.length) * 100 : 0;
+  const currentStep = steps.find((s) => s.status === 'running');
 
   return (
     <div
       style={{
-        padding: '10px 14px',
-        backgroundColor: '#faf9f7',
-        borderRadius: 12,
-        border: '1px solid #e8e5e0',
+        padding: '12px 14px',
+        background: running
+          ? 'linear-gradient(135deg, #faf9f7 0%, #f5f0ff 100%)'
+          : '#faf9f7',
+        borderRadius: 14,
+        border: running ? '1px solid #e0d4f5' : '1px solid #e8e5e0',
+        transition: 'all 0.4s ease',
+        boxShadow: running ? '0 2px 12px rgba(99, 102, 241, 0.06)' : 'none',
       }}
     >
       <button
@@ -1442,91 +1599,135 @@ function TaskProgressCard({
           padding: 0,
         }}
       >
-        {/* Thumbnail placeholder */}
+        {/* Animated icon */}
         <div
           style={{
             width: 40,
             height: 40,
-            borderRadius: 6,
-            backgroundColor: '#e8e5e0',
+            borderRadius: 10,
+            background: running
+              ? 'linear-gradient(135deg, #6366f1, #8b5cf6)'
+              : completed === steps.length && steps.length > 0
+              ? 'linear-gradient(135deg, #10b981, #059669)'
+              : '#e8e5e0',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             flexShrink: 0,
-            overflow: 'hidden',
+            position: 'relative',
+            transition: 'background 0.4s ease',
           }}
         >
-          <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', padding: 4, gap: 2 }}>
-            <div style={{ height: 3, backgroundColor: '#d4d1cc', borderRadius: 1, width: '80%' }} />
-            <div style={{ height: 3, backgroundColor: '#d4d1cc', borderRadius: 1, width: '60%' }} />
-            <div style={{ height: 3, backgroundColor: '#d4d1cc', borderRadius: 1, width: '70%' }} />
-          </div>
+          {running ? (
+            <Loader2 size={18} color="#fff" style={{ animation: 'spin 1.5s linear infinite' }} />
+          ) : completed === steps.length && steps.length > 0 ? (
+            <CheckCircle2 size={18} color="#fff" />
+          ) : (
+            <Code2 size={16} color="#999" />
+          )}
+          {running && (
+            <div style={{
+              position: 'absolute',
+              inset: -2,
+              borderRadius: 12,
+              border: '2px solid #6366f130',
+              animation: 'stepPulse 2s ease-in-out infinite',
+            }} />
+          )}
         </div>
 
         <div style={{ flex: 1, textAlign: 'left', minWidth: 0 }}>
           <div
             style={{
               fontSize: 13,
-              fontWeight: 500,
-              color: '#444',
+              fontWeight: 600,
+              color: '#1a1a1a',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
             }}
           >
-            {running ? (
-              <>
-                <Loader2 size={12} color="#d97706" style={{ animation: 'spin 1s linear infinite', display: 'inline', verticalAlign: 'middle', marginRight: 4 }} />
-                {title}
-              </>
-            ) : (
-              title
-            )}
+            {title}
           </div>
-          <div style={{ fontSize: 11, color: '#999', marginTop: 2 }}>
-            {isPaused ? 'Waiting for user...' : running ? 'Working...' : 'Completed'}
+          <div style={{ fontSize: 11, color: '#888', marginTop: 2, display: 'flex', alignItems: 'center', gap: 6 }}>
+            {isPaused ? (
+              <span style={{ color: '#d97706' }}>Waiting for your response...</span>
+            ) : running ? (
+              <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <span style={{ color: '#6366f1', fontWeight: 500 }}>{currentStep?.title?.substring(0, 40) || 'Working...'}</span>
+              </span>
+            ) : (
+              <span style={{ color: '#10b981' }}>Completed</span>
+            )}
           </div>
         </div>
 
-        <span
-          style={{
-            fontSize: 12,
-            color: '#999',
-            fontWeight: 500,
-            flexShrink: 0,
-          }}
-        >
-          {completed} / {steps.length}
-        </span>
-        {expanded ? <ChevronUp size={14} color="#999" /> : <ChevronDown size={14} color="#999" />}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+          <span style={{ fontSize: 12, color: '#666', fontWeight: 600 }}>
+            {completed} / {steps.length}
+          </span>
+          {expanded ? <ChevronUp size={14} color="#999" /> : <ChevronDown size={14} color="#999" />}
+        </div>
       </button>
+
+      {/* Progress bar */}
+      <div style={{
+        height: 3,
+        backgroundColor: '#e8e5e0',
+        borderRadius: 2,
+        marginTop: 10,
+        overflow: 'hidden',
+      }}>
+        <div style={{
+          height: '100%',
+          width: `${progress}%`,
+          background: running
+            ? 'linear-gradient(90deg, #6366f1, #8b5cf6, #6366f1)'
+            : 'linear-gradient(90deg, #10b981, #059669)',
+          borderRadius: 2,
+          transition: 'width 0.5s ease',
+          backgroundSize: running ? '200% 100%' : '100% 100%',
+          animation: running ? 'progressShimmer 2s linear infinite' : 'none',
+        }} />
+      </div>
 
       {expanded && (
         <div style={{ marginTop: 10, paddingTop: 8, borderTop: '1px solid #f0ede8' }}>
-          {steps.map((step) => (
-            <div
-              key={step.stepIndex}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                padding: '4px 0',
-                fontSize: 12,
-                color: step.status === 'completed' ? '#888' : step.status === 'running' ? '#3b82f6' : '#bbb',
-              }}
-            >
-              {step.status === 'completed' ? (
-                <CheckCircle2 size={13} color="#22c55e" />
-              ) : step.status === 'running' ? (
-                <Loader2 size={13} color="#3b82f6" style={{ animation: 'spin 1s linear infinite' }} />
-              ) : step.status === 'failed' ? (
-                <AlertCircle size={13} color="#ef4444" />
-              ) : (
-                <Circle size={13} color="#ddd" />
-              )}
-              <span>{step.title}</span>
-            </div>
-          ))}
+          {steps.map((step, i) => {
+            const isStepRunning = step.status === 'running';
+            const isStepDone = step.status === 'completed';
+            const isStepFailed = step.status === 'failed';
+            return (
+              <div
+                key={step.stepIndex}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '4px 0',
+                  fontSize: 12,
+                  color: isStepDone ? '#888' : isStepRunning ? '#6366f1' : isStepFailed ? '#ef4444' : '#bbb',
+                  animation: `stepFadeIn 0.3s ease-out ${i * 0.02}s both`,
+                }}
+              >
+                {isStepDone ? (
+                  <CheckCircle2 size={13} color="#10b981" />
+                ) : isStepRunning ? (
+                  <Loader2 size={13} color="#6366f1" style={{ animation: 'spin 1s linear infinite' }} />
+                ) : isStepFailed ? (
+                  <AlertCircle size={13} color="#ef4444" />
+                ) : (
+                  <Circle size={13} color="#ddd" />
+                )}
+                <span style={{
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  fontWeight: isStepRunning ? 500 : 400,
+                }}>{step.title}</span>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
