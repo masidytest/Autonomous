@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Sidebar } from '../components/Sidebar';
+import { MobileNav } from '../components/MobileNav';
 import { SearchModal } from '../components/SearchModal';
 import { NewProjectModal } from '../components/NewProjectModal';
 import { InviteModal } from '../components/InviteModal';
@@ -77,6 +78,7 @@ export function Library() {
 
   return (
     <div
+      className="page-with-sidebar"
       style={{
         display: 'flex',
         height: '100vh',
@@ -103,14 +105,25 @@ export function Library() {
       <InviteModal isOpen={inviteOpen} onClose={() => setInviteOpen(false)} />
       <SettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
 
-      {/* Shared sidebar */}
-      <Sidebar
+      {/* Mobile navigation */}
+      <MobileNav
         activePage="library"
         onSearchClick={() => setSearchOpen(true)}
         onNewProject={() => setProjectModalOpen(true)}
         onInviteClick={() => setInviteOpen(true)}
         onSettingsClick={() => setSettingsOpen(true)}
       />
+
+      {/* Desktop sidebar */}
+      <div className="sidebar-desktop" style={{ display: 'flex' }}>
+        <Sidebar
+          activePage="library"
+          onSearchClick={() => setSearchOpen(true)}
+          onNewProject={() => setProjectModalOpen(true)}
+          onInviteClick={() => setInviteOpen(true)}
+          onSettingsClick={() => setSettingsOpen(true)}
+        />
+      </div>
 
       {/* ── MAIN CONTENT ── */}
       <main

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Sidebar } from '../components/Sidebar';
+import { MobileNav } from '../components/MobileNav';
 import { SearchModal } from '../components/SearchModal';
 import { NewProjectModal } from '../components/NewProjectModal';
 import { InviteModal } from '../components/InviteModal';
@@ -56,6 +57,7 @@ export function Agents() {
 
   return (
     <div
+      className="page-with-sidebar"
       style={{
         display: 'flex',
         height: '100vh',
@@ -81,7 +83,8 @@ export function Agents() {
       <InviteModal isOpen={inviteOpen} onClose={() => setInviteOpen(false)} />
       <SettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
 
-      <Sidebar
+      {/* Mobile navigation */}
+      <MobileNav
         activePage="agents"
         onSearchClick={() => setSearchOpen(true)}
         onNewProject={() => setProjectModalOpen(true)}
@@ -89,7 +92,18 @@ export function Agents() {
         onSettingsClick={() => setSettingsOpen(true)}
       />
 
-      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      {/* Desktop sidebar */}
+      <div className="sidebar-desktop" style={{ display: 'flex' }}>
+        <Sidebar
+          activePage="agents"
+          onSearchClick={() => setSearchOpen(true)}
+          onNewProject={() => setProjectModalOpen(true)}
+          onInviteClick={() => setInviteOpen(true)}
+          onSettingsClick={() => setSettingsOpen(true)}
+        />
+      </div>
+
+      <main className="page-main-content" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {/* Page header */}
         <header style={{ padding: '20px 32px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
@@ -112,7 +126,7 @@ export function Agents() {
         </header>
 
         {/* Filter bar */}
-        <div style={{ padding: '16px 32px', display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div className="skills-filter-bar" style={{ padding: '16px 32px', display: 'flex', alignItems: 'center', gap: 12 }}>
           {/* Search */}
           <div style={{
             display: 'flex', alignItems: 'center', gap: 8,
@@ -134,7 +148,7 @@ export function Agents() {
           </div>
 
           {/* Category filters */}
-          <div style={{ display: 'flex', gap: 4 }}>
+          <div className="skills-category-filters" style={{ display: 'flex', gap: 4 }}>
             <button
               onClick={() => setActiveCategory('all')}
               style={{
@@ -171,7 +185,7 @@ export function Agents() {
 
         {/* Skills grid */}
         <div style={{ flex: 1, overflow: 'auto', padding: '0 32px 40px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 12 }}>
+          <div className="skills-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 12 }}>
             {filteredSkills.map((skill) => {
               const catMeta = SKILL_CATEGORIES[skill.category];
               const isExpanded = expandedSkill === skill.id;

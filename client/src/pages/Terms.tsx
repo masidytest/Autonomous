@@ -1,0 +1,279 @@
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
+
+export function Terms() {
+  const navigate = useNavigate();
+
+  return (
+    <div
+      style={{
+        minHeight: '100vh',
+        backgroundColor: '#f5f3ef',
+        fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+        color: '#1a1a1a',
+      }}
+    >
+      {/* Header */}
+      <header
+        style={{
+          borderBottom: '1px solid #e8e5df',
+          backgroundColor: '#f5f3ef',
+        }}
+      >
+        <div
+          style={{
+            maxWidth: 800,
+            margin: '0 auto',
+            padding: '0 32px',
+            height: 64,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 16,
+          }}
+        >
+          <button
+            onClick={() => navigate('/')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '6px 14px',
+              fontSize: 13,
+              fontWeight: 500,
+              color: '#666',
+              backgroundColor: '#fff',
+              border: '1px solid #e8e5e0',
+              borderRadius: 8,
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+            }}
+          >
+            <ArrowLeft size={14} />
+            Back
+          </button>
+          <span style={{ fontSize: 14, fontWeight: 600, color: '#1a1a1a' }}>Terms of Service</span>
+        </div>
+      </header>
+
+      {/* Content */}
+      <main style={{ maxWidth: 800, margin: '0 auto', padding: '48px 32px 80px' }}>
+        <h1 style={{ fontSize: 32, fontWeight: 700, marginBottom: 8 }}>Terms of Service</h1>
+        <p style={{ fontSize: 13, color: '#999', marginBottom: 40 }}>Last updated: February 14, 2026</p>
+
+        <div style={{ fontSize: 15, color: '#444', lineHeight: 1.8 }}>
+          <Section title="1. Acceptance of Terms">
+            <p>
+              By accessing or using Masidy Agent ("the Service"), operated by Masidy ("we", "our", "us"),
+              you agree to be bound by these Terms of Service. If you do not agree to these terms, do not
+              use the Service.
+            </p>
+          </Section>
+
+          <Section title="2. Description of Service">
+            <p>
+              Masidy Agent is an AI-powered autonomous software engineering platform that uses Claude Opus 4.6
+              (by Anthropic) to plan, write, debug, test, and deploy code based on your instructions. The Service includes:
+            </p>
+            <ul style={ulStyle}>
+              <li>AI-powered code generation from natural language prompts</li>
+              <li>Autonomous project building with file management, terminal execution, and browser automation</li>
+              <li>Integration with GitHub for source code management</li>
+              <li>Deployment to hosting platforms (e.g., Vercel)</li>
+              <li>Project export and download capabilities</li>
+            </ul>
+          </Section>
+
+          <Section title="3. Account Registration">
+            <p>
+              To use the Service, you must authenticate via GitHub OAuth. By connecting your GitHub account, you:
+            </p>
+            <ul style={ulStyle}>
+              <li>Confirm you are at least 13 years of age</li>
+              <li>Grant us permission to access your GitHub profile information and email</li>
+              <li>Grant us permission to create and push to repositories on your behalf (only when you explicitly request it)</li>
+              <li>Are responsible for maintaining the security of your account</li>
+            </ul>
+          </Section>
+
+          <Section title="4. Acceptable Use">
+            <p>You agree not to use the Service to:</p>
+            <ul style={ulStyle}>
+              <li>Generate malicious software, malware, viruses, or any code intended to cause harm</li>
+              <li>Create content that violates any applicable law or regulation</li>
+              <li>Infringe upon the intellectual property rights of others</li>
+              <li>Attempt to reverse-engineer, exploit, or compromise the Service infrastructure</li>
+              <li>Abuse the AI agent by submitting excessive or automated requests beyond normal use</li>
+              <li>Use the Service for any unlawful, fraudulent, or harmful purpose</li>
+              <li>Circumvent usage limits, rate limits, or access controls</li>
+            </ul>
+            <p>
+              We reserve the right to suspend or terminate accounts that violate these terms.
+            </p>
+          </Section>
+
+          <Section title="5. Intellectual Property & Ownership">
+            <h4 style={h4Style}>5.1 Your Content</h4>
+            <p>
+              You retain full ownership of all prompts, instructions, and input you provide to the Service.
+              You also retain ownership of the code and projects generated by the AI agent based on your instructions.
+              You are free to use, modify, distribute, and commercialize any code generated for you.
+            </p>
+
+            <h4 style={h4Style}>5.2 Our Service</h4>
+            <p>
+              The Masidy Agent platform, its user interface, underlying technology, branding, and documentation
+              are owned by Masidy. These Terms do not grant you any rights to our trademarks, service marks, or
+              brand assets.
+            </p>
+
+            <h4 style={h4Style}>5.3 Open Source</h4>
+            <p>
+              When the AI agent generates code that uses open-source libraries, the generated code may be subject
+              to the respective open-source licenses. You are responsible for reviewing and complying with any
+              applicable open-source license terms.
+            </p>
+          </Section>
+
+          <Section title="6. AI-Generated Code Disclaimer">
+            <p>
+              Code generated by Masidy Agent is produced by an AI model (Claude Opus 4.6) and is provided
+              "as is." While we strive for high-quality output:
+            </p>
+            <ul style={ulStyle}>
+              <li>AI-generated code may contain bugs, security vulnerabilities, or errors</li>
+              <li>You are responsible for reviewing, testing, and validating all generated code before use in production</li>
+              <li>We do not guarantee that generated code is free from intellectual property claims</li>
+              <li>We do not guarantee that generated code meets any specific compliance or regulatory requirements</li>
+            </ul>
+          </Section>
+
+          <Section title="7. Service Plans & Usage Limits">
+            <p>The Service offers the following plans:</p>
+            <ul style={ulStyle}>
+              <li><strong>Free Plan</strong> — Limited to 10 tasks, 5 projects, and community support</li>
+              <li><strong>Pro Plan ($19/month)</strong> — Unlimited tasks and projects, priority support, advanced features</li>
+              <li><strong>Team Plan ($49/month)</strong> — Everything in Pro, plus team collaboration and dedicated support</li>
+            </ul>
+            <p>
+              We reserve the right to modify pricing, features, and usage limits with reasonable notice. Paid
+              plans are billed monthly. You may cancel at any time; cancellation takes effect at the end of the
+              current billing period.
+            </p>
+          </Section>
+
+          <Section title="8. Deployment & Hosting">
+            <p>
+              When you deploy projects through the Service, they are hosted on third-party platforms (e.g., Vercel).
+              Your deployed projects are subject to the terms and policies of those hosting providers. We are not
+              responsible for the availability, performance, or security of third-party hosting services.
+            </p>
+          </Section>
+
+          <Section title="9. Data & Privacy">
+            <p>
+              Your use of the Service is also governed by our{' '}
+              <a
+                href="/privacy"
+                onClick={(e) => { e.preventDefault(); navigate('/privacy'); }}
+                style={linkStyle}
+              >
+                Privacy Policy
+              </a>
+              , which describes how we collect, use, and protect your information.
+            </p>
+          </Section>
+
+          <Section title="10. Limitation of Liability">
+            <p>
+              To the maximum extent permitted by law, Masidy shall not be liable for any indirect, incidental,
+              special, consequential, or punitive damages arising from your use of the Service, including but
+              not limited to:
+            </p>
+            <ul style={ulStyle}>
+              <li>Loss of data, revenue, or profits</li>
+              <li>Damages caused by AI-generated code in production environments</li>
+              <li>Service interruptions or downtime</li>
+              <li>Unauthorized access to your account due to compromised credentials</li>
+            </ul>
+            <p>
+              Our total liability for any claim arising from the Service shall not exceed the amount you paid
+              us in the 12 months preceding the claim, or $100, whichever is greater.
+            </p>
+          </Section>
+
+          <Section title="11. Indemnification">
+            <p>
+              You agree to indemnify and hold harmless Masidy, its officers, employees, and agents from any
+              claims, damages, or expenses arising from your use of the Service, your violation of these Terms,
+              or your violation of any third-party rights.
+            </p>
+          </Section>
+
+          <Section title="12. Termination">
+            <p>
+              We may suspend or terminate your access to the Service at any time if you violate these Terms
+              or for any other reason with reasonable notice. Upon termination:
+            </p>
+            <ul style={ulStyle}>
+              <li>Your right to use the Service ceases immediately</li>
+              <li>You may request export of your project data within 30 days</li>
+              <li>We may delete your data after 30 days from termination</li>
+            </ul>
+          </Section>
+
+          <Section title="13. Changes to Terms">
+            <p>
+              We may update these Terms from time to time. We will notify you of material changes by posting
+              a notice on the platform. Your continued use of the Service after changes take effect constitutes
+              acceptance of the updated Terms.
+            </p>
+          </Section>
+
+          <Section title="14. Governing Law">
+            <p>
+              These Terms shall be governed by and construed in accordance with applicable laws. Any disputes
+              arising from these Terms or the Service shall be resolved through good-faith negotiation, and if
+              necessary, binding arbitration.
+            </p>
+          </Section>
+
+          <Section title="15. Contact">
+            <p>For questions about these Terms of Service, contact us at:</p>
+            <ul style={{ ...ulStyle, listStyle: 'none', paddingLeft: 0 }}>
+              <li>Email: <a href="mailto:legal@masidy.com" style={linkStyle}>legal@masidy.com</a></li>
+              <li>General: <a href="mailto:contact@masidy.com" style={linkStyle}>contact@masidy.com</a></li>
+              <li>GitHub: <a href="https://github.com/masidytest/Autonomous" target="_blank" rel="noopener noreferrer" style={linkStyle}>github.com/masidytest/Autonomous</a></li>
+            </ul>
+          </Section>
+        </div>
+      </main>
+    </div>
+  );
+}
+
+const h4Style: React.CSSProperties = {
+  fontSize: 14,
+  fontWeight: 600,
+  color: '#1a1a1a',
+  marginTop: 20,
+  marginBottom: 8,
+};
+
+const ulStyle: React.CSSProperties = {
+  paddingLeft: 24,
+  marginBottom: 16,
+};
+
+const linkStyle: React.CSSProperties = {
+  color: '#7c3aed',
+  textDecoration: 'none',
+};
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section style={{ marginBottom: 36 }}>
+      <h2 style={{ fontSize: 20, fontWeight: 700, color: '#1a1a1a', marginBottom: 12 }}>{title}</h2>
+      {children}
+    </section>
+  );
+}

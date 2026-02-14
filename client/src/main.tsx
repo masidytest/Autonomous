@@ -9,8 +9,11 @@ import { Agents } from './pages/Agents';
 import { Library } from './pages/Library';
 import { AuthCallback } from './pages/AuthCallback';
 import { Docs } from './pages/Docs';
+import { Privacy } from './pages/Privacy';
+import { Terms } from './pages/Terms';
 import { ToastContainer } from './components/Toast';
 import { UpgradeModal } from './components/UpgradeModal';
+import { InstallPrompt } from './components/InstallPrompt';
 import './index.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
@@ -24,10 +27,13 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         <Route path="/agents" element={<Agents />} />
         <Route path="/library" element={<Library />} />
         <Route path="/docs" element={<Docs />} />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/terms" element={<Terms />} />
         <Route path="/project/:id" element={<Workspace />} />
       </Routes>
     </BrowserRouter>
     <ToastContainer />
     <UpgradeModal />
+    <InstallPrompt />
   </React.StrictMode>,
 );

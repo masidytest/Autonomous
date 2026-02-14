@@ -7,13 +7,10 @@ import {
   Smartphone,
   Paintbrush,
   Code2,
-  MoreHorizontal,
   Clock,
-  ArrowRight,
   Github,
   Twitter,
-  Linkedin,
-  Youtube,
+  Mail,
 } from 'lucide-react';
 import { fetchProjects, createProject, type ProjectData } from '../lib/api';
 import { isAuthenticated, savePendingPrompt } from '../lib/auth';
@@ -27,57 +24,30 @@ const quickActions = [
 ];
 
 const footerLinks: Record<string, string> = {
-  'Web Application': '/dashboard',
-  'AI Design': '/agents',
-  'AI Slides': '/agents',
-  'Browser Agent': '/agents',
-  'Deep Research': '/agents',
-  'Blog': '/docs',
+  'Web App': '/dashboard',
+  'Skills': '/agents',
+  'Projects': '/library',
   'Documentation': '/docs',
-  'Updates': '/docs',
-  'Help Center': '/docs',
-  'API': '/docs',
-  'Events': '/library',
-  'Discord': '#',
-  'Fellows': '/library',
-  'Playbook': '/docs',
-  'VS ChatGPT': '/agents',
-  'VS Copilot': '/agents',
-  'VS Cursor': '/agents',
-  'Desktop App': '#',
-  'Mobile App': '#',
-  'VS Code Extension': '#',
-  'About': '/docs',
-  'Careers': '#',
-  'Press': '#',
-  'Privacy': '#',
-  'Terms': '#',
+  'Get Started': '/auth',
+  'GitHub': 'https://github.com/masidytest/Autonomous',
+  'Contact': 'mailto:contact@masidy.com',
+  'Support': 'mailto:support@masidy.com',
+  'Privacy Policy': '/privacy',
+  'Terms of Service': '/terms',
 };
 
 const footerColumns = [
   {
     title: 'Product',
-    links: ['Web Application', 'AI Design', 'AI Slides', 'Browser Agent', 'Deep Research'],
+    links: ['Web App', 'Skills', 'Projects'],
   },
   {
     title: 'Resources',
-    links: ['Blog', 'Documentation', 'Updates', 'Help Center', 'API'],
-  },
-  {
-    title: 'Community',
-    links: ['Events', 'Discord', 'Fellows', 'Playbook'],
-  },
-  {
-    title: 'Compare',
-    links: ['VS ChatGPT', 'VS Copilot', 'VS Cursor'],
-  },
-  {
-    title: 'Download',
-    links: ['Desktop App', 'Mobile App', 'VS Code Extension'],
+    links: ['Documentation', 'Get Started', 'GitHub'],
   },
   {
     title: 'Company',
-    links: ['About', 'Careers', 'Press', 'Privacy', 'Terms'],
+    links: ['Contact', 'Support', 'Privacy Policy', 'Terms of Service'],
   },
 ];
 
@@ -244,6 +214,7 @@ export function ProjectDashboard() {
 
           {/* Center nav links */}
           <div
+            className="landing-nav-links"
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -252,9 +223,8 @@ export function ProjectDashboard() {
           >
             {[
               { label: 'Features', route: '/agents' },
-              { label: 'Resources', route: '/library' },
+              { label: 'Projects', route: '/library' },
               { label: 'Docs', route: '/docs' },
-              { label: 'Pricing', route: '/library' },
             ].map((link) => (
               <a
                 key={link.label}
@@ -275,7 +245,7 @@ export function ProjectDashboard() {
           </div>
 
           {/* Auth buttons */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div className="landing-auth-btns" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <Link
               to="/auth"
               style={{
@@ -294,6 +264,7 @@ export function ProjectDashboard() {
             </Link>
             <Link
               to="/auth"
+              className="signup-btn"
               style={{
                 padding: '8px 20px',
                 fontSize: 14,
@@ -314,6 +285,7 @@ export function ProjectDashboard() {
 
       {/* ── Announcement bar ── */}
       <div
+        className="announcement-bar"
         style={{
           width: '100%',
           background: 'linear-gradient(90deg, #1a1a1a 0%, #2d1f3d 50%, #1a1a1a 100%)',
@@ -362,6 +334,7 @@ export function ProjectDashboard() {
 
       {/* ── Main content ── */}
       <main
+        className="landing-main"
         style={{
           flex: 1,
           display: 'flex',
@@ -373,7 +346,7 @@ export function ProjectDashboard() {
       >
         <div style={{ width: '100%', maxWidth: 720 }}>
           {/* Hero heading */}
-          <div style={{ textAlign: 'center', marginTop: 60, marginBottom: 40 }}>
+          <div className="landing-hero" style={{ textAlign: 'center', marginTop: 60, marginBottom: 40 }}>
             {/* Opus badge */}
             <div style={{
               display: 'inline-flex',
@@ -503,6 +476,7 @@ export function ProjectDashboard() {
 
           {/* Quick action chips */}
           <div
+            className="landing-chips"
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -571,7 +545,7 @@ export function ProjectDashboard() {
               </span>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+            <div className="capabilities-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
               {[
                 {
                   title: 'Top-tier reasoning',
@@ -608,7 +582,7 @@ export function ProjectDashboard() {
               ))}
             </div>
 
-            <div style={{
+            <div className="capabilities-bar" style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               gap: 24, marginTop: 16, paddingTop: 16,
               borderTop: '1px solid #e9d5ff30',
@@ -745,6 +719,7 @@ export function ProjectDashboard() {
       <footer style={{ backgroundColor: '#1a1a1a', color: '#fff' }}>
         {/* Tagline */}
         <div
+          className="footer-tagline"
           style={{
             maxWidth: 1200,
             margin: '0 auto',
@@ -771,6 +746,7 @@ export function ProjectDashboard() {
 
         {/* Links grid */}
         <div
+          className="footer-links-wrap"
           style={{
             maxWidth: 1200,
             margin: '0 auto',
@@ -778,9 +754,10 @@ export function ProjectDashboard() {
           }}
         >
           <div
+            className="footer-grid"
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(6, 1fr)',
+              gridTemplateColumns: 'repeat(3, 1fr)',
               gap: 24,
             }}
           >
@@ -801,9 +778,11 @@ export function ProjectDashboard() {
                     <li key={link} style={{ marginBottom: 10 }}>
                       <a
                         href={footerLinks[link] || '#'}
+                        target={footerLinks[link]?.startsWith('http') || footerLinks[link]?.startsWith('mailto:') ? '_blank' : undefined}
+                        rel={footerLinks[link]?.startsWith('http') ? 'noopener noreferrer' : undefined}
                         onClick={(e) => {
                           const route = footerLinks[link];
-                          if (route && route !== '#') {
+                          if (route && !route.startsWith('http') && !route.startsWith('mailto:')) {
                             e.preventDefault();
                             navigate(route);
                           }
@@ -834,6 +813,7 @@ export function ProjectDashboard() {
         {/* Bottom bar */}
         <div style={{ borderTop: '1px solid #333' }}>
           <div
+            className="footer-bottom"
             style={{
               maxWidth: 1200,
               margin: '0 auto',
@@ -846,9 +826,8 @@ export function ProjectDashboard() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
               {[
                 { Icon: Github, url: 'https://github.com/masidytest/Autonomous' },
-                { Icon: Twitter, url: 'https://twitter.com' },
-                { Icon: Youtube, url: 'https://youtube.com' },
-                { Icon: Linkedin, url: 'https://linkedin.com' },
+                { Icon: Twitter, url: 'https://twitter.com/masidy' },
+                { Icon: Mail, url: 'mailto:contact@masidy.com' },
               ].map(({ Icon, url }, i) => (
                 <a
                   key={i}

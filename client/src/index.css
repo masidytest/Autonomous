@@ -6,10 +6,16 @@
   box-sizing: border-box;
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+}
+
 body {
   font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overscroll-behavior: none;
 }
 
 .font-serif {
@@ -20,40 +26,33 @@ code, pre, .font-mono {
   font-family: 'JetBrains Mono', 'Fira Code', monospace;
 }
 
-/* Scrollbar styles */
+/* ── Scrollbar ── */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
-
 ::-webkit-scrollbar-track {
   background: transparent;
 }
-
 ::-webkit-scrollbar-thumb {
   background: rgb(200, 200, 200);
   border-radius: 3px;
 }
-
 ::-webkit-scrollbar-thumb:hover {
   background: rgb(160, 160, 160);
 }
-
-/* Dark scrollbar for workspace */
 .dark-scroll::-webkit-scrollbar-thumb {
   background: rgb(55, 65, 81);
 }
-
 .dark-scroll::-webkit-scrollbar-thumb:hover {
   background: rgb(75, 85, 99);
 }
 
-/* Animations */
+/* ── Animations ── */
 @keyframes pulse-border {
   0%, 100% { border-color: rgba(59, 130, 246, 0.3); }
   50% { border-color: rgba(59, 130, 246, 0.6); }
 }
-
 .animate-pulse-border {
   animation: pulse-border 2s ease-in-out infinite;
 }
@@ -62,7 +61,6 @@ code, pre, .font-mono {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
-
 .animate-fade-in {
   animation: fadeIn 0.4s ease-out;
 }
@@ -71,7 +69,358 @@ code, pre, .font-mono {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
 }
-
 .animate-slide-up {
   animation: slideUp 0.6s ease-out;
+}
+
+/* ── Safe area padding for notched devices ── */
+.safe-top { padding-top: env(safe-area-inset-top); }
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+.safe-left { padding-left: env(safe-area-inset-left); }
+.safe-right { padding-right: env(safe-area-inset-right); }
+
+/* ── Mobile overlay sidebar ── */
+.mobile-sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 998;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.mobile-sidebar-overlay.open {
+  opacity: 1;
+}
+
+.mobile-sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 280px;
+  z-index: 999;
+  transform: translateX(-100%);
+  transition: transform 0.3s ease;
+}
+.mobile-sidebar.open {
+  transform: translateX(0);
+}
+
+/* ── Mobile hamburger button ── */
+.mobile-menu-btn {
+  display: none;
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  z-index: 997;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #1a1a1a;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+/* ══════════════════════════════════════════════════════
+   RESPONSIVE BREAKPOINTS (Mobile-First)
+   Phone:   < 640px
+   Tablet:  640px – 1023px
+   Desktop: 1024px+
+   ══════════════════════════════════════════════════════ */
+
+/* ── Phone (default styles apply, overrides for < 640px) ── */
+@media (max-width: 639px) {
+  /* Show mobile menu button, hide desktop sidebar */
+  .mobile-menu-btn {
+    display: flex !important;
+  }
+  .mobile-sidebar-overlay {
+    display: block;
+  }
+
+  /* Sidebar: hide from flex layout on pages that use it */
+  .sidebar-desktop {
+    display: none !important;
+  }
+
+  /* Landing page navbar */
+  .landing-nav-links {
+    display: none !important;
+  }
+  .landing-nav {
+    padding: 0 16px !important;
+  }
+  .landing-auth-btns .signup-btn {
+    display: none !important;
+  }
+
+  /* Landing page content */
+  .landing-main {
+    padding: 0 16px 40px !important;
+  }
+  .landing-hero {
+    margin-top: 32px !important;
+    margin-bottom: 24px !important;
+  }
+  .landing-hero h1 {
+    font-size: 28px !important;
+  }
+  .landing-hero p {
+    font-size: 14px !important;
+  }
+  .landing-input-card {
+    border-radius: 16px !important;
+  }
+  .landing-input-card textarea {
+    padding: 16px 16px 4px !important;
+    font-size: 14px !important;
+  }
+  .landing-chips {
+    gap: 6px !important;
+  }
+  .landing-chips button {
+    padding: 8px 12px !important;
+    font-size: 12px !important;
+  }
+
+  /* Capabilities grid -> stack */
+  .capabilities-grid {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+  .capabilities-bar {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+
+  /* Announcement bar */
+  .announcement-bar {
+    padding: 8px 12px !important;
+    font-size: 12px !important;
+    flex-wrap: wrap !important;
+  }
+  .announcement-bar .badge {
+    font-size: 9px !important;
+  }
+
+  /* Footer */
+  .footer-grid {
+    grid-template-columns: 1fr !important;
+    gap: 24px !important;
+  }
+  .footer-tagline p {
+    font-size: 24px !important;
+  }
+  .footer-tagline {
+    padding: 40px 16px 24px !important;
+  }
+  .footer-links-wrap {
+    padding: 0 16px 32px !important;
+  }
+  .footer-bottom {
+    padding: 16px !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+
+  /* Dashboard / pages with sidebar */
+  .page-with-sidebar {
+    flex-direction: column !important;
+  }
+  .page-main-content {
+    width: 100% !important;
+  }
+  .page-main-content header {
+    padding: 16px !important;
+  }
+
+  /* Skills grid */
+  .skills-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .skills-filter-bar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .skills-category-filters {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap !important;
+  }
+
+  /* Library grid */
+  .library-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Workspace / IDE */
+  .workspace-layout {
+    flex-direction: column !important;
+  }
+  .workspace-chat {
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    height: 50vh !important;
+    border-right: none !important;
+    border-bottom: 1px solid #333 !important;
+  }
+  .workspace-panels {
+    width: 100% !important;
+    height: 50vh !important;
+  }
+  .workspace-header {
+    padding: 8px 12px !important;
+  }
+  .workspace-header-title {
+    font-size: 13px !important;
+  }
+
+  /* Docs page */
+  .docs-layout {
+    flex-direction: column !important;
+  }
+  .docs-sidebar {
+    display: none !important;
+  }
+  .docs-toc {
+    display: none !important;
+  }
+  .docs-content {
+    padding: 16px !important;
+  }
+
+  /* Auth page */
+  .auth-card {
+    margin: 16px !important;
+    padding: 24px !important;
+    max-width: 100% !important;
+  }
+
+  /* Opus badge */
+  .opus-badge {
+    font-size: 11px !important;
+    padding: 4px 10px !important;
+  }
+
+  /* Recent projects on landing */
+  .recent-projects {
+    margin-top: 32px !important;
+  }
+  .recent-project-btn {
+    padding: 10px 14px !important;
+  }
+}
+
+/* ── Tablet (640px - 1023px) ── */
+@media (min-width: 640px) and (max-width: 1023px) {
+  .mobile-menu-btn {
+    display: flex !important;
+  }
+  .mobile-sidebar-overlay {
+    display: block;
+  }
+  .sidebar-desktop {
+    display: none !important;
+  }
+
+  .capabilities-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .footer-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
+
+  .workspace-chat {
+    width: 320px !important;
+    min-width: 320px !important;
+  }
+
+  .skills-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .library-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .landing-main {
+    padding: 0 24px 48px !important;
+  }
+}
+
+/* ── Desktop (1024px+) — sidebar visible ── */
+@media (min-width: 1024px) {
+  .mobile-menu-btn {
+    display: none !important;
+  }
+  .mobile-sidebar-overlay {
+    display: none !important;
+  }
+  .mobile-sidebar {
+    display: none !important;
+  }
+  .sidebar-desktop {
+    display: flex !important;
+  }
+}
+
+/* ── Touch device optimizations ── */
+@media (hover: none) and (pointer: coarse) {
+  button, a, [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Bigger scrollbars on touch */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+}
+
+/* ── Install prompt banner ── */
+.pwa-install-banner {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #1a1a1a;
+  color: #fff;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  z-index: 1000;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.2);
+  font-size: 14px;
+  transform: translateY(100%);
+  transition: transform 0.3s ease;
+}
+.pwa-install-banner.visible {
+  transform: translateY(0);
+}
+.pwa-install-banner button {
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  border: none;
+}
+.pwa-install-btn {
+  background: #7c3aed;
+  color: #fff;
+}
+.pwa-dismiss-btn {
+  background: transparent;
+  color: #888;
 }

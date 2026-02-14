@@ -357,9 +357,10 @@ export function Docs() {
       </div>
 
       {/* ═══ MAIN THREE-COLUMN LAYOUT ═══ */}
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+      <div className="docs-layout" style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
         {/* ── Left sidebar ── */}
         <aside
+          className="docs-sidebar"
           style={{
             width: 220,
             minWidth: 220,
@@ -430,6 +431,7 @@ export function Docs() {
 
         {/* ── Center content ── */}
         <main
+          className="docs-content"
           style={{
             flex: 1,
             overflow: 'auto',
@@ -664,6 +666,7 @@ export function Docs() {
 
         {/* ── Right TOC sidebar ── */}
         <aside
+          className="docs-toc"
           style={{
             width: 200,
             minWidth: 200,

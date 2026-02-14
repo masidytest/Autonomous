@@ -40,6 +40,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { Sidebar } from '../components/Sidebar';
+import { MobileNav } from '../components/MobileNav';
 import { SearchModal } from '../components/SearchModal';
 import { NewProjectModal } from '../components/NewProjectModal';
 import { InviteModal } from '../components/InviteModal';
@@ -677,6 +678,7 @@ export function Workspace() {
 
   return (
     <div
+      className="page-with-sidebar"
       style={{
         display: 'flex',
         height: '100vh',
@@ -712,8 +714,8 @@ export function Workspace() {
       <InviteModal isOpen={inviteOpen} onClose={() => setInviteOpen(false)} />
       <SettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
 
-      {/* ────────── FULL SIDEBAR ────────── */}
-      <Sidebar
+      {/* Mobile navigation */}
+      <MobileNav
         activePage="dashboard"
         onSearchClick={() => setSearchOpen(true)}
         onNewProject={() => setProjectModalOpen(true)}
@@ -721,10 +723,22 @@ export function Workspace() {
         onSettingsClick={() => setSettingsOpen(true)}
       />
 
+      {/* ────────── FULL SIDEBAR (desktop only) ────────── */}
+      <div className="sidebar-desktop" style={{ display: 'flex' }}>
+        <Sidebar
+          activePage="dashboard"
+          onSearchClick={() => setSearchOpen(true)}
+          onNewProject={() => setProjectModalOpen(true)}
+          onInviteClick={() => setInviteOpen(true)}
+          onSettingsClick={() => setSettingsOpen(true)}
+        />
+      </div>
+
       {/* ────────── MAIN AREA ────────── */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {/* ══ TOP HEADER BAR ══ */}
         <header
+          className="workspace-header"
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -891,9 +905,10 @@ export function Workspace() {
         </header>
 
         {/* ══ SPLIT PANELS ══ */}
-        <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+        <div className="workspace-layout" style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
           {/* ──── LEFT: CHAT PANEL ──── */}
           <div
+            className="workspace-chat"
             style={{
               width: '45%',
               minWidth: 340,
@@ -1114,6 +1129,7 @@ export function Workspace() {
 
           {/* ──── RIGHT: PREVIEW / CODE / TERMINAL / FILES PANEL ──── */}
           <div
+            className="workspace-panels"
             style={{
               flex: 1,
               display: 'flex',
