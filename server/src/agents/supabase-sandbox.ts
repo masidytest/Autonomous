@@ -1,12 +1,11 @@
 /**
- * SupabaseSandbox — Cloud-native sandbox using Supabase for file storage
- * and job tracking. All files persist in Supabase DB + Storage.
+ * ProjectSandbox — Reliable local sandbox for file storage and command execution.
  *
- * - File read/write/list → sandbox_files table in Supabase
- * - Code execution → sandbox_jobs table + server-side runner
- * - Storage bucket "workspaces" for binary/large files
+ * Files are stored in a local temp directory per project. The Drizzle DB `files`
+ * table (managed by the orchestrator) is the permanent storage layer.
+ *
+ * No dependency on Supabase sandbox_files / sandbox_jobs tables.
  */
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { exec as execCb } from 'child_process';
 import { promisify } from 'util';
 import * as fs from 'fs/promises';
@@ -19,48 +18,24 @@ const execAsync = promisify(execCb);
 
 export class SupabaseSandbox {
   private projectId: string;
-  private supabase: SupabaseClient | null = null;
   private running = false;
   private containerId: string | null = null;
-  private edgeFunctionUrl: string | null = null;
   private tempDir: string | null = null;
-  private localOnly = false;
 
   constructor(projectId: string) {
     this.projectId = projectId;
-
-    const supabaseUrl = process.env.SUPABASE_URL;
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-    if (!supabaseUrl || !serviceKey) {
-      console.warn(
-        '[SupabaseSandbox] SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY not set — running in local-only mode',
-      );
-      this.localOnly = true;
-      return;
-    }
-
-    this.supabase = createClient(supabaseUrl, serviceKey);
-
-    // Edge Function URL (if deployed)
-    this.edgeFunctionUrl = supabaseUrl
-      ? `${supabaseUrl}/functions/v1/execute-code`
-      : null;
   }
 
   async start(): Promise<string> {
-    this.containerId = `supa-${uuidv4().substring(0, 8)}`;
+    this.containerId = `sandbox-${uuidv4().substring(0, 8)}`;
     this.running = true;
 
-    // Create a temp working directory for command execution
+    // Create a persistent working directory for this project
     this.tempDir = path.join(os.tmpdir(), 'masidy-sandbox', this.projectId);
     await fs.mkdir(this.tempDir, { recursive: true });
 
-    // Sync existing files from Supabase to temp dir
-    await this.syncFilesToLocal();
-
     console.log(
-      `[SupabaseSandbox] Started for project ${this.projectId} (temp: ${this.tempDir})`,
+      `[Sandbox] Started for project ${this.projectId} (dir: ${this.tempDir})`,
     );
     return this.containerId;
   }
@@ -79,9 +54,7 @@ export class SupabaseSandbox {
       this.tempDir = null;
     }
 
-    console.log(
-      `[SupabaseSandbox] Stopped for project ${this.projectId}`,
-    );
+    console.log(`[Sandbox] Stopped for project ${this.projectId}`);
   }
 
   async exec(
@@ -92,45 +65,32 @@ export class SupabaseSandbox {
       throw new Error('Sandbox not started');
     }
 
-    // Log the job to Supabase (if connected)
-    const jobId = uuidv4();
-    if (this.supabase) {
-      try {
-        await this.supabase.from('sandbox_jobs').insert({
-          id: jobId,
-          project_id: this.projectId,
-          type: 'exec',
-          command,
-          status: 'running',
-          timeout_ms: timeout,
-          started_at: new Date().toISOString(),
-        });
-      } catch { /* ignore insert errors */ }
-    }
-
-    // Sync files from Supabase to temp dir before execution
-    if (this.supabase) {
-      await this.syncFilesToLocal();
-    }
-
-    // Translate /workspace paths
+    // Translate /workspace paths to the temp dir
     let cmd = command;
     cmd = cmd.replace(/cd\s+\/workspace\s*&&\s*/g, '');
 
     const isWindows = process.platform === 'win32';
     if (isWindows) {
-      cmd = cmd.replace(/\/workspace\//g, '');
+      // On Windows, strip /workspace references and translate Linux commands
+      cmd = cmd.replace(/\/workspace\//g, '.\\');
       cmd = cmd.replace(/\/workspace\b/g, '.');
       cmd = cmd.replace(/nohup\s+/g, '');
       cmd = cmd.replace(/\s*&\s*$/, '');
       cmd = cmd.replace(/\bwhich\s+/g, 'where ');
+      // Translate common Linux commands to Windows equivalents
+      cmd = cmd.replace(/^ls\b/, 'dir');
+      cmd = cmd.replace(/^cat\s+/g, 'type ');
+      cmd = cmd.replace(/^rm\s+-rf?\s+/g, 'rmdir /s /q ');
+      cmd = cmd.replace(/^mkdir\s+-p\s+/g, 'mkdir ');
+      cmd = cmd.replace(/^cp\s+-r?\s+/g, 'xcopy /E /I /Y ');
+      cmd = cmd.replace(/^mv\s+/g, 'move ');
+      cmd = cmd.replace(/^chmod\b.*$/g, 'echo chmod not needed on Windows');
+      // Handle 2>&1 redirect (works on both)
     } else {
       const posixDir = this.tempDir.replace(/\\/g, '/');
       cmd = cmd.replace(/\/workspace\//g, `${posixDir}/`);
       cmd = cmd.replace(/\/workspace\b/g, posixDir);
     }
-
-    let result: { exitCode: number; stdout: string; stderr: string };
 
     try {
       const { stdout, stderr } = await execAsync(cmd, {
@@ -142,82 +102,37 @@ export class SupabaseSandbox {
           ...process.env,
           PATH: process.env.PATH,
           HOME: process.env.HOME || process.env.USERPROFILE || '/tmp',
+          NODE_ENV: 'development',
         },
       });
 
-      result = {
+      return {
         exitCode: 0,
         stdout: (stdout || '').trim(),
         stderr: (stderr || '').trim(),
       };
     } catch (error: any) {
-      // child_process.exec error.code can be a string (e.g. 'ERR_CHILD_PROCESS_STDIO_MAXBUFFER')
-      const exitCode = typeof error.code === 'number' ? error.code : (error.status ?? 1);
-      console.error(`[SupabaseSandbox] exec error for "${cmd.substring(0, 80)}":`, error.message);
-      result = {
+      const exitCode =
+        typeof error.code === 'number'
+          ? error.code
+          : (error.status ?? 1);
+      console.error(
+        `[Sandbox] exec error for "${cmd.substring(0, 100)}":`,
+        error.message?.substring(0, 200),
+      );
+      return {
         exitCode,
         stdout: (error.stdout || '').trim(),
         stderr: (error.stderr || error.message || '').trim(),
       };
     }
-
-    // Sync any new/changed files back to Supabase (if connected)
-    if (this.supabase) {
-      await this.syncFilesToSupabase();
-    }
-
-    // Update the job record (if Supabase connected)
-    if (this.supabase) {
-      try {
-        await this.supabase
-          .from('sandbox_jobs')
-          .update({
-            status: result.exitCode === 0 ? 'completed' : 'failed',
-            exit_code: result.exitCode,
-            stdout: result.stdout.substring(0, 50000),
-            stderr: result.stderr.substring(0, 50000),
-            completed_at: new Date().toISOString(),
-          })
-          .eq('id', jobId);
-      } catch { /* ignore update errors */ }
-    }
-
-    return result;
   }
 
   async writeFile(filePath: string, content: string): Promise<ToolResult> {
     try {
       const normalizedPath = this.normalizePath(filePath);
 
-      // Write to Supabase DB (if connected)
-      if (this.supabase) {
-        const { error } = await this.supabase.from('sandbox_files').upsert(
-          {
-            project_id: this.projectId,
-            file_path: normalizedPath,
-            content,
-            language: this.detectLanguage(normalizedPath),
-            size_bytes: Buffer.byteLength(content, 'utf-8'),
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: 'project_id,file_path' },
-        );
-
-        if (error) {
-          console.warn('[SupabaseSandbox] writeFile upsert error:', error.message);
-        }
-
-        // Also upload to Storage bucket
-        await this.supabase.storage
-          .from('workspaces')
-          .upload(`${this.projectId}/${normalizedPath}`, new Blob([content]), {
-            upsert: true,
-            contentType: 'text/plain',
-          })
-          .catch(() => {});
-      }
-
-      // Always write to local temp dir
+      // Write to local temp dir (source of truth for command execution)
       if (this.tempDir) {
         const localPath = path.join(this.tempDir, normalizedPath);
         await fs.mkdir(path.dirname(localPath), { recursive: true });
@@ -234,29 +149,10 @@ export class SupabaseSandbox {
     try {
       const normalizedPath = this.normalizePath(filePath);
 
-      // Try Supabase DB first
-      if (this.supabase) {
-        const { data, error } = await this.supabase
-          .from('sandbox_files')
-          .select('content')
-          .eq('project_id', this.projectId)
-          .eq('file_path', normalizedPath)
-          .single();
-
-        if (!error && data) {
-          return { success: true, output: data.content };
-        }
-      }
-
-      // Fallback: read from local temp dir
       if (this.tempDir) {
         const localPath = path.join(this.tempDir, normalizedPath);
-        try {
-          const content = await fs.readFile(localPath, 'utf-8');
-          return { success: true, output: content };
-        } catch {
-          // file doesn't exist locally either
-        }
+        const content = await fs.readFile(localPath, 'utf-8');
+        return { success: true, output: content };
       }
 
       return {
@@ -265,7 +161,7 @@ export class SupabaseSandbox {
         error: `File not found: ${filePath}`,
       };
     } catch (error: any) {
-      return { success: false, output: '', error: error.message };
+      return { success: false, output: '', error: `File not found: ${filePath}` };
     }
   }
 
@@ -274,54 +170,13 @@ export class SupabaseSandbox {
     recursive: boolean = false,
   ): Promise<ToolResult> {
     try {
-      const normalizedDir = this.normalizePath(dirPath);
-
-      // Try Supabase DB first
-      if (this.supabase) {
-        const { data, error } = await this.supabase
-          .from('sandbox_files')
-          .select('file_path')
-          .eq('project_id', this.projectId)
-          .order('file_path');
-
-        if (!error && data && data.length > 0) {
-          let files = data.map((f: { file_path: string }) => f.file_path);
-
-          if (normalizedDir && normalizedDir !== '.') {
-            files = files.filter(
-              (f: string) =>
-                f.startsWith(normalizedDir + '/') || f === normalizedDir,
-            );
-          }
-
-          if (!recursive) {
-            const prefix = normalizedDir && normalizedDir !== '.'
-              ? normalizedDir + '/'
-              : '';
-            const seen = new Set<string>();
-            files = files
-              .map((f: string) => {
-                const relative = prefix ? f.substring(prefix.length) : f;
-                if (!relative) return null;
-                const firstSlash = relative.indexOf('/');
-                const entry = firstSlash === -1 ? relative : relative.substring(0, firstSlash);
-                const isDir = firstSlash !== -1;
-                return { name: entry, isDir };
-              })
-              .filter((f: any) => f && !seen.has(f.name) && (seen.add(f.name), true))
-              .map((f: any) => `${f.isDir ? 'd' : '-'} ${f.name}`);
-          }
-
-          return {
-            success: true,
-            output: files.length > 0 ? files.join('\n') : '(empty directory)',
-          };
-        }
-      }
-
-      // Fallback: list from local temp dir
       if (this.tempDir) {
-        const localFiles = await this.walkDir(this.tempDir);
+        const normalizedDir = this.normalizePath(dirPath);
+        const targetDir = normalizedDir && normalizedDir !== '.'
+          ? path.join(this.tempDir, normalizedDir)
+          : this.tempDir;
+
+        const localFiles = await this.walkDir(targetDir);
         if (localFiles.length > 0) {
           return { success: true, output: localFiles.join('\n') };
         }
@@ -350,83 +205,6 @@ export class SupabaseSandbox {
       .replace(/\\/g, '/');
   }
 
-  private detectLanguage(filePath: string): string | null {
-    const ext = filePath.split('.').pop()?.toLowerCase() || '';
-    const langMap: Record<string, string> = {
-      js: 'javascript', jsx: 'javascript', mjs: 'javascript', cjs: 'javascript',
-      ts: 'typescript', tsx: 'typescript', mts: 'typescript',
-      py: 'python', rb: 'ruby', go: 'go', rs: 'rust', java: 'java',
-      html: 'html', css: 'css', scss: 'scss', less: 'less',
-      json: 'json', md: 'markdown', mdx: 'markdown',
-      yaml: 'yaml', yml: 'yaml', toml: 'toml', xml: 'xml',
-      sql: 'sql', sh: 'bash', bash: 'bash', zsh: 'bash',
-      dockerfile: 'dockerfile', makefile: 'makefile',
-      c: 'c', cpp: 'cpp', h: 'c', hpp: 'cpp',
-      swift: 'swift', kt: 'kotlin', scala: 'scala',
-      php: 'php', r: 'r', lua: 'lua', dart: 'dart',
-      vue: 'vue', svelte: 'svelte',
-    };
-    return langMap[ext] || null;
-  }
-
-  /** Sync files from Supabase DB → local temp dir (for command execution) */
-  private async syncFilesToLocal(): Promise<void> {
-    if (!this.tempDir || !this.supabase) return;
-
-    try {
-      const { data } = await this.supabase
-        .from('sandbox_files')
-        .select('file_path, content')
-        .eq('project_id', this.projectId);
-
-      if (!data || data.length === 0) return;
-
-      for (const file of data) {
-        const localPath = path.join(this.tempDir, file.file_path);
-        await fs.mkdir(path.dirname(localPath), { recursive: true });
-        await fs.writeFile(localPath, file.content, 'utf-8');
-      }
-    } catch {
-      /* best effort sync */
-    }
-  }
-
-  /** Sync files from local temp dir → Supabase DB (after command execution) */
-  private async syncFilesToSupabase(): Promise<void> {
-    if (!this.tempDir || !this.supabase) return;
-
-    try {
-      const localFiles = await this.walkDir(this.tempDir);
-
-      for (const relativePath of localFiles) {
-        const localPath = path.join(this.tempDir, relativePath);
-        try {
-          const stat = await fs.stat(localPath);
-          if (!stat.isFile() || stat.size > 5 * 1024 * 1024) continue; // Skip dirs and files > 5MB
-
-          const content = await fs.readFile(localPath, 'utf-8');
-          const normalizedPath = relativePath.replace(/\\/g, '/');
-
-          await this.supabase.from('sandbox_files').upsert(
-            {
-              project_id: this.projectId,
-              file_path: normalizedPath,
-              content,
-              language: this.detectLanguage(normalizedPath),
-              size_bytes: stat.size,
-              updated_at: new Date().toISOString(),
-            },
-            { onConflict: 'project_id,file_path' },
-          );
-        } catch {
-          /* skip binary/unreadable files */
-        }
-      }
-    } catch {
-      /* best effort sync */
-    }
-  }
-
   private async walkDir(
     dir: string,
     maxDepth = 5,
@@ -438,9 +216,10 @@ export class SupabaseSandbox {
       const entries = await fs.readdir(dir, { withFileTypes: true });
       for (const entry of entries) {
         if (
-          ['node_modules', '.git', 'dist', '.next', '__pycache__', '.cache'].includes(
-            entry.name,
-          )
+          [
+            'node_modules', '.git', 'dist', '.next', '__pycache__',
+            '.cache', '.vite', '.turbo', 'coverage',
+          ].includes(entry.name)
         )
           continue;
         const fullPath = path.join(dir, entry.name);

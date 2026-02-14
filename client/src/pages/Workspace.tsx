@@ -361,41 +361,62 @@ export function Workspace() {
     if (!htmlFile) return null;
 
     let html = htmlFile.content;
-    // Inject CSS files inline
+
+    // Inject CSS files inline — replace <link> tags referencing local CSS files
     const cssFiles = files.filter(f => f.path.endsWith('.css'));
     for (const css of cssFiles) {
       const fileName = css.path.split('/').pop() || '';
-      // Replace link tags referencing this CSS file
-      const linkRegex = new RegExp(`<link[^>]*href=["'][^"']*${fileName.replace('.', '\\.')}["'][^>]*>`, 'gi');
-      html = html.replace(linkRegex, `<style>${css.content}</style>`);
+      const escapedName = fileName.replace(/\./g, '\\.');
+      const linkRegex = new RegExp(`<link[^>]*href=["'][^"']*${escapedName}["'][^>]*\\/?>`, 'gi');
+      if (linkRegex.test(html)) {
+        html = html.replace(linkRegex, `<style>/* ${fileName} */\n${css.content}</style>`);
+      }
     }
-    // If CSS wasn't linked, inject at end of head
-    if (cssFiles.length > 0 && !html.includes('<style>')) {
-      const allCss = cssFiles.map(f => f.content).join('\n');
-      html = html.replace('</head>', `<style>${allCss}</style></head>`);
-    }
-    // Inject JS files inline
-    const jsFiles = files.filter(f => f.path.endsWith('.js') && !f.path.includes('server') && !f.path.includes('config') && !f.path.includes('vite') && !f.path.includes('tailwind') && !f.path.includes('postcss'));
-    for (const js of jsFiles) {
-      const fileName = js.path.split('/').pop() || '';
-      const scriptRegex = new RegExp(`<script[^>]*src=["'][^"']*${fileName.replace('.', '\\.')}["'][^>]*>\\s*</script>`, 'gi');
-      html = html.replace(scriptRegex, `<script>${js.content}</script>`);
-    }
-    // If JS files weren't referenced via script tags, append them before </body>
-    if (jsFiles.length > 0) {
-      for (const js of jsFiles) {
-        const fileName = js.path.split('/').pop() || '';
-        if (!html.includes(js.content.substring(0, 40))) {
-          // Only inject if not already present
-          const scriptTag = `<script>/* ${fileName} */\n${js.content}</script>`;
-          if (html.includes('</body>')) {
-            html = html.replace('</body>', `${scriptTag}\n</body>`);
-          } else {
-            html += scriptTag;
-          }
+    // If CSS files exist but weren't linked via <link> tags, inject at end of <head>
+    for (const css of cssFiles) {
+      const fileName = css.path.split('/').pop() || '';
+      if (!html.includes(css.content.substring(0, Math.min(40, css.content.length)))) {
+        const styleTag = `<style>/* ${fileName} */\n${css.content}</style>`;
+        if (html.includes('</head>')) {
+          html = html.replace('</head>', `${styleTag}\n</head>`);
         }
       }
     }
+
+    // Inject JS/JSX files inline — replace <script src="..."> tags with inline content
+    const jsFiles = files.filter(f =>
+      (f.path.endsWith('.js') || f.path.endsWith('.jsx')) &&
+      !f.path.includes('server.') && !f.path.includes('config') &&
+      !f.path.includes('vite') && !f.path.includes('tailwind') && !f.path.includes('postcss')
+    );
+    for (const js of jsFiles) {
+      const fileName = js.path.split('/').pop() || '';
+      const escapedName = fileName.replace(/\./g, '\\.');
+      // Match script tags with this filename, preserving type attribute (e.g. type="text/babel")
+      const scriptRegex = new RegExp(`<script([^>]*)src=["'][^"']*${escapedName}["']([^>]*)>\\s*</script>`, 'gi');
+      html = html.replace(scriptRegex, (_match, before, after) => {
+        // Preserve type="text/babel" and other attributes, remove src
+        const attrs = (before + ' ' + after).trim();
+        return `<script ${attrs}>/* ${fileName} */\n${js.content}</script>`;
+      });
+    }
+
+    // If JS files weren't referenced via script tags, append them before </body>
+    for (const js of jsFiles) {
+      const fileName = js.path.split('/').pop() || '';
+      if (!html.includes(js.content.substring(0, Math.min(40, js.content.length)))) {
+        // Detect if it's JSX (needs text/babel type)
+        const isJsx = fileName.endsWith('.jsx') || js.content.includes('React.') || js.content.includes('ReactDOM.');
+        const typeAttr = isJsx ? ' type="text/babel"' : '';
+        const scriptTag = `<script${typeAttr}>/* ${fileName} */\n${js.content}</script>`;
+        if (html.includes('</body>')) {
+          html = html.replace('</body>', `${scriptTag}\n</body>`);
+        } else {
+          html += scriptTag;
+        }
+      }
+    }
+
     try {
       const blob = new Blob([html], { type: 'text/html' });
       return URL.createObjectURL(blob);
@@ -667,7 +688,7 @@ export function Workspace() {
           ) : deployUrl ? (
             <iframe src={deployUrl} title="Live preview" style={{ width: '100%', height: '100%', border: 'none' }} sandbox="allow-scripts allow-same-origin allow-popups allow-forms" />
           ) : previewBlobUrl ? (
-            <iframe key={previewKey} src={previewBlobUrl} title="Local preview" style={{ width: '100%', height: '100%', border: 'none' }} sandbox="allow-scripts allow-same-origin" />
+            <iframe key={previewKey} src={previewBlobUrl} title="Local preview" style={{ width: '100%', height: '100%', border: 'none' }} sandbox="allow-scripts allow-same-origin allow-popups allow-modals" />
           ) : (
             <p style={{ color: '#999' }}>No preview available yet</p>
           )}
@@ -1337,7 +1358,7 @@ export function Workspace() {
                       src={previewBlobUrl}
                       title="Local preview"
                       style={{ width: '100%', height: '100%', border: 'none' }}
-                      sandbox="allow-scripts allow-same-origin"
+                      sandbox="allow-scripts allow-same-origin allow-popups allow-modals"
                     />
                   ) : (
                     <div style={{ textAlign: 'center', padding: 40 }}>

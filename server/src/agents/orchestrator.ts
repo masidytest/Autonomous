@@ -13,68 +13,109 @@ import { DeployTool } from '../tools/deploy.js';
 
 const MAX_ITERATIONS = 50;
 
-const SYSTEM_PROMPT = `You are Masidy Agent — an autonomous AI software engineer powered by Claude Opus 4.6 from Anthropic. You are the most advanced AI coding agent available today. You build beautiful, production-quality web applications from a single prompt.
+const SYSTEM_PROMPT = `You are Masidy Agent — an autonomous AI software engineer powered by Claude Opus 4.6 from Anthropic. You build beautiful, production-quality web applications from a single prompt.
 
 ## Who You Are
-You are powered by Claude Opus 4.6 — Anthropic's flagship AI model and the #1 ranked model on SWE-bench for real-world software engineering tasks. Here is why you are exceptional:
-- **Most capable AI for coding**: Opus 4.6 outperforms GPT-4o, Gemini, and all other models on coding benchmarks including SWE-bench, HumanEval, and MBPP
-- **Deep reasoning**: You don't just generate code — you think step by step, plan architecture, debug complex issues, and iterate until the result is production-quality
-- **Full autonomy**: Unlike ChatGPT (which only suggests code) or GitHub Copilot (which only autocompletes lines), you plan, write, run, test, debug, and deploy entire applications end-to-end
-- **10 integrated tools**: You directly control the filesystem, terminal, browser, web search, and deployment pipeline — no copy-pasting needed
-- **200K token context**: You can understand and work with massive codebases, maintain context across long conversations, and handle complex multi-file projects
+You are powered by Claude Opus 4.6 — Anthropic's flagship AI model and the #1 ranked model on SWE-bench for real-world software engineering tasks.
+- **Most capable AI for coding**: Opus 4.6 outperforms GPT-4o, Gemini, and all other models on coding benchmarks
+- **Full autonomy**: You plan, write, test, debug, and deploy entire applications end-to-end
+- **10 integrated tools**: You directly control the filesystem, terminal, browser, web search, and deployment pipeline
 
-When users ask about your capabilities or what model you use, proudly explain that you run on Claude Opus 4.6 and why it makes you the most capable AI coding agent.
+When users ask about your capabilities or what model you use, proudly explain that you run on Claude Opus 4.6.
 
 ## Your Personality
 - Talk like a helpful friend, not a formal bot. Be warm, encouraging, and genuinely excited about what the user is building.
-- Proactively suggest improvements — don't just do what's asked, think about what would make the result exceptional.
-- When you finish a build, offer 2-3 specific ideas to enhance it (e.g., "This looks great! Want me to add smooth page transitions or a dark mode toggle?").
-- Use brief, friendly messages. Celebrate milestones ("Nice — your landing page is looking sharp!").
+- Proactively suggest improvements — don't just do what's asked.
+- When you finish a build, offer 2-3 specific ideas to enhance it.
+- Use brief, friendly messages. Celebrate milestones.
 - If something fails, be reassuring: "No worries, let me fix that real quick."
 
+## CRITICAL: How to Build Applications
+
+### For websites, landing pages, portfolios, dashboards, and most web apps:
+**ALWAYS build as STATIC HTML + CSS + JS files.** This is mandatory because:
+- The preview panel renders your HTML files directly in an iframe
+- Users see your work INSTANTLY as you write each file
+- No build step or server needed — it just works
+
+**Standard approach:**
+1. Create \`/workspace/index.html\` — the main entry point with ALL HTML structure
+2. Create \`/workspace/css/styles.css\` — all styling (or use inline styles / Tailwind CDN)
+3. Create \`/workspace/js/app.js\` — all interactivity (vanilla JS or Alpine.js CDN)
+4. Link CSS and JS files with relative paths in the HTML
+
+**Use CDN libraries — NEVER npm install for frontend projects:**
+- **Tailwind CSS**: \`<script src="https://cdn.tailwindcss.com"></script>\`
+- **React + ReactDOM**: \`<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>\` + \`<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>\` + \`<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>\`
+- **Vue.js**: \`<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>\`
+- **Alpine.js**: \`<script src="https://unpkg.com/alpinejs@3/dist/cdn.min.js" defer></script>\`
+- **HTMX**: \`<script src="https://unpkg.com/htmx.org@1/dist/htmx.min.js"></script>\`
+- **Three.js**: \`<script src="https://unpkg.com/three@0.160/build/three.min.js"></script>\`
+- **Chart.js**: \`<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>\`
+- **Anime.js**: \`<script src="https://cdn.jsdelivr.net/npm/animejs@3/lib/anime.min.js"></script>\`
+- **GSAP**: \`<script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js"></script>\`
+- **Icons (Lucide)**: \`<script src="https://unpkg.com/lucide@latest"></script>\`
+- **Icons (Font Awesome)**: \`<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">\`
+- **Google Fonts**: \`<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">\`
+- **AOS Animations**: \`<link href="https://unpkg.com/aos@2/dist/aos.css" rel="stylesheet">\` + \`<script src="https://unpkg.com/aos@2/dist/aos.js"></script>\`
+
+### For React apps specifically:
+Use React via CDN with Babel standalone — NO npm/webpack/vite needed:
+\`\`\`html
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script type="text/babel">
+  function App() {
+    const [count, setCount] = React.useState(0);
+    return <div><h1>Count: {count}</h1><button onClick={() => setCount(c => c + 1)}>+</button></div>;
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+\`\`\`
+
+### When terminal commands ARE needed:
+- Only use \`run_command\` for: checking node/npm versions, running simple scripts, or installing dependencies for backend-only projects
+- If a command fails, DON'T retry the same command — adapt your approach (e.g., use CDN instead of npm)
+- Always prefer \`write_file\` over terminal for creating files
+
+### For backend / API projects (Express, Flask, etc.):
+- Write the server code with \`write_file\`
+- Use \`run_command\` for \`npm install\` (only when building a real backend)
+- Note: backend servers won't preview in the iframe — explain to the user they need to run it locally
+
 ## Your Workflow
-1. PLAN — use the plan tool to create a clear, structured execution plan
-2. EXECUTE each step using the available tools
-3. If errors occur, DEBUG by reading error messages and fixing issues
-4. VERIFY by running the app and browsing the result to ensure quality
-5. SUMMARIZE what you built and suggest improvements
+1. PLAN — use the plan tool to create a clear execution plan
+2. EXECUTE — create files using write_file (prefer this over terminal)
+3. DEBUG — if errors occur, read error messages and fix issues
+4. VERIFY — check your work makes sense
+5. SUMMARIZE — explain what you built and suggest improvements
 
 ## Quality Standards
 - Build PREMIUM, modern UIs — clean typography, proper spacing, subtle animations, hover effects
 - Use modern CSS: flexbox/grid, smooth transitions, responsive design by default
-- Always add meta viewport tag for mobile responsiveness
+- Always add \`<meta name="viewport" content="width=device-width, initial-scale=1.0">\`
 - Include loading states, hover interactions, and micro-animations
 - Write clean, well-organized, production-ready code
 - Use semantic HTML and accessible markup
 
-## Free Resources to Use (proactively integrate these)
-- **Fonts**: Use Google Fonts CDN — recommended: Inter, DM Sans, Plus Jakarta Sans, Poppins, Space Grotesk
-  - Example: <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-- **Icons**: Use Lucide CDN, Heroicons, or Phosphor Icons via unpkg/CDN
-  - Example: <script src="https://unpkg.com/lucide@latest"></script>
-- **CSS Frameworks**: Consider Tailwind CDN for rapid styling
-  - Example: <script src="https://cdn.tailwindcss.com"></script>
-- **Images**: Use Unsplash for placeholder/stock photos
-  - Example: https://images.unsplash.com/photo-{id}?w=800&auto=format
-  - Common sizes: ?w=400, ?w=800, ?w=1200
-- **Gradients**: Use modern gradient backgrounds — linear-gradient with 2-3 colors
-- **Animations**: Use CSS @keyframes for entrance animations, hover transitions, and loading states
-- **Color palettes**: Use harmonious color schemes — warm neutrals, indigo/violet accents, emerald greens
+## Free Resources to Use
+- **Fonts**: Google Fonts — Inter, DM Sans, Plus Jakarta Sans, Poppins, Space Grotesk
+- **Icons**: Lucide, Font Awesome, Heroicons via CDN
+- **Images**: Unsplash — \`https://images.unsplash.com/photo-{id}?w=800&auto=format\`
+- **Gradients**: Modern gradients — linear-gradient with 2-3 harmonious colors
+- **Animations**: CSS @keyframes, AOS library, or GSAP for advanced animations
+- **Color palettes**: Warm neutrals, indigo/violet accents, emerald greens
 
 ## Rules
 - Always create a plan before starting implementation
-- Write production-quality, well-structured code
-- Don't give up on the first error — read the error, think about it, and try to fix it
-- Test by running the application
-- Install dependencies before using them (npm install, pip install, etc.)
-- Ask the user if you need clarification on requirements
-- Use think tool when facing complex decisions
-- Create files directly in /workspace (e.g. /workspace/index.html, /workspace/css/styles.css) — do NOT create a project subdirectory like /workspace/my-project/
-- Prefer using write_file over terminal commands for creating files and directories
-- When building HTML pages, always include a favicon, proper meta tags, and Open Graph tags
+- Create files directly in /workspace (e.g. /workspace/index.html) — do NOT create subdirectories like /workspace/my-project/
+- **ALWAYS create index.html as the first file** — this is what the preview displays
+- Prefer using write_file over terminal commands for creating files
 - Make everything responsive and mobile-friendly by default
 - Add subtle animations: fade-ins, slide-ups, scale transitions on hover
-- Use a consistent, professional color scheme throughout`;
+- Use a consistent, professional color scheme throughout
+- When building HTML pages, always include favicon, proper meta tags, and Open Graph tags`;
 
 const TOOL_DEFINITIONS: Anthropic.Tool[] = [
   {
@@ -106,7 +147,7 @@ const TOOL_DEFINITIONS: Anthropic.Tool[] = [
   },
   {
     name: 'write_file',
-    description: 'Write content to a file. Creates directories automatically. Path relative to /workspace.',
+    description: 'Write content to a file. Creates directories automatically. Path relative to /workspace. ALWAYS create index.html first for web projects.',
     input_schema: {
       type: 'object' as const,
       properties: {
@@ -141,7 +182,7 @@ const TOOL_DEFINITIONS: Anthropic.Tool[] = [
   },
   {
     name: 'run_command',
-    description: 'Run a shell command in the sandbox. Commands run from /workspace directory.',
+    description: 'Run a shell command in the sandbox. Commands run from /workspace directory. IMPORTANT: Only use for tasks that truly need terminal (npm install for backends, running scripts). For frontend web apps, use CDN libraries and write_file instead.',
     input_schema: {
       type: 'object' as const,
       properties: {
@@ -183,7 +224,7 @@ const TOOL_DEFINITIONS: Anthropic.Tool[] = [
   },
   {
     name: 'deploy',
-    description: 'Build and deploy the application.',
+    description: 'Build and deploy the application to Vercel.',
     input_schema: {
       type: 'object' as const,
       properties: {
@@ -217,6 +258,217 @@ const TOOL_DEFINITIONS: Anthropic.Tool[] = [
     },
   },
 ];
+
+/* ── Project Templates ── */
+
+interface ProjectTemplate {
+  files: { path: string; content: string }[];
+}
+
+function detectProjectType(prompt: string): string {
+  const p = prompt.toLowerCase();
+  if (p.includes('react') && !p.includes('vue') && !p.includes('svelte')) return 'react';
+  if (p.includes('vue')) return 'vue';
+  if (p.includes('three.js') || p.includes('3d') || p.includes('threejs')) return 'threejs';
+  if (p.includes('game')) return 'game';
+  if (p.includes('dashboard') || p.includes('admin')) return 'dashboard';
+  if (p.includes('api') || p.includes('backend') || p.includes('server') || p.includes('express') || p.includes('flask')) return 'backend';
+  return 'static'; // Default: static HTML
+}
+
+function getTemplate(type: string): ProjectTemplate {
+  switch (type) {
+    case 'react':
+      return {
+        files: [
+          {
+            path: '/workspace/index.html',
+            content: `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>React App</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚛️</text></svg>">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>body { font-family: 'Inter', sans-serif; }</style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel" src="js/app.jsx"></script>
+</body>
+</html>`,
+          },
+          {
+            path: '/workspace/js/app.jsx',
+            content: `function App() {
+  const [loaded, setLoaded] = React.useState(false);
+  React.useEffect(() => setLoaded(true), []);
+  return (
+    <div className={\`min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 transition-opacity duration-500 \${loaded ? 'opacity-100' : 'opacity-0'}\`}>
+      <div className="max-w-4xl mx-auto px-4 py-16">
+        <h1 className="text-4xl font-bold text-slate-900">Hello World</h1>
+        <p className="mt-4 text-lg text-slate-600">Your React app is ready. Start building!</p>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);`,
+          },
+        ],
+      };
+
+    case 'dashboard':
+      return {
+        files: [
+          {
+            path: '/workspace/index.html',
+            content: `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>body { font-family: 'Inter', sans-serif; }</style>
+</head>
+<body class="bg-slate-50">
+  <div id="app"></div>
+  <script src="js/app.js"></script>
+</body>
+</html>`,
+          },
+        ],
+      };
+
+    case 'threejs':
+      return {
+        files: [
+          {
+            path: '/workspace/index.html',
+            content: `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3D Experience</title>
+  <script src="https://unpkg.com/three@0.160/build/three.min.js"></script>
+  <style>body { margin: 0; overflow: hidden; } canvas { display: block; }</style>
+</head>
+<body>
+  <script src="js/app.js"></script>
+</body>
+</html>`,
+          },
+        ],
+      };
+
+    case 'game':
+      return {
+        files: [
+          {
+            path: '/workspace/index.html',
+            content: `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Game</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #0a0a0a; display: flex; align-items: center; justify-content: center; min-height: 100vh; font-family: sans-serif; }
+    canvas { border-radius: 8px; box-shadow: 0 0 40px rgba(99,102,241,0.2); }
+  </style>
+</head>
+<body>
+  <canvas id="game"></canvas>
+  <script src="js/game.js"></script>
+</body>
+</html>`,
+          },
+        ],
+      };
+
+    case 'vue':
+      return {
+        files: [
+          {
+            path: '/workspace/index.html',
+            content: `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vue App</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💚</text></svg>">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>body { font-family: 'Inter', sans-serif; }</style>
+</head>
+<body>
+  <div id="app"></div>
+  <script src="js/app.js"></script>
+</body>
+</html>`,
+          },
+        ],
+      };
+
+    case 'backend':
+      // Backend projects don't get a template — let Claude handle it
+      return { files: [] };
+
+    default: // static
+      return {
+        files: [
+          {
+            path: '/workspace/index.html',
+            content: `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Website</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌐</text></svg>">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link href="https://unpkg.com/aos@2/dist/aos.css" rel="stylesheet">
+  <script src="https://unpkg.com/aos@2/dist/aos.js"></script>
+  <style>body { font-family: 'Inter', sans-serif; }</style>
+</head>
+<body class="bg-white text-slate-900">
+  <div id="app"></div>
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="js/app.js"></script>
+  <script>AOS.init({ duration: 800, once: true });</script>
+</body>
+</html>`,
+          },
+          {
+            path: '/workspace/css/styles.css',
+            content: `/* Custom styles — Tailwind handles most styling via classes */\n`,
+          },
+          {
+            path: '/workspace/js/app.js',
+            content: `// App logic\ndocument.addEventListener('DOMContentLoaded', () => {\n  lucide.createIcons();\n});\n`,
+          },
+        ],
+      };
+  }
+}
+
+/* ── Orchestrator ── */
 
 export class AgentOrchestrator {
   private io: SocketServer;
@@ -295,6 +547,9 @@ export class AgentOrchestrator {
         .set({ containerId })
         .where(eq(projects.id, this.projectId));
 
+      // Scaffold template files based on the prompt
+      await this.scaffoldTemplate(prompt);
+
       // Run the agent loop
       await this.agentLoop(prompt);
 
@@ -341,6 +596,53 @@ export class AgentOrchestrator {
       // Cleanup
       await this.browserTool.close().catch(() => {});
       await this.sandbox.stop().catch(() => {});
+    }
+  }
+
+  /** Scaffold template files into the sandbox and DB based on prompt analysis */
+  private async scaffoldTemplate(prompt: string): Promise<void> {
+    const projectType = detectProjectType(prompt);
+    const template = getTemplate(projectType);
+
+    if (template.files.length === 0) return;
+
+    console.log(`[Orchestrator] Scaffolding ${projectType} template (${template.files.length} files)`);
+
+    for (const file of template.files) {
+      // Write to sandbox
+      await this.sandbox.writeFile(file.path, file.content);
+
+      // Detect language
+      const ext = file.path.split('.').pop() || '';
+      const langMap: Record<string, string> = {
+        ts: 'typescript', tsx: 'typescript', js: 'javascript', jsx: 'javascript',
+        py: 'python', html: 'html', css: 'css', json: 'json',
+        md: 'markdown', yml: 'yaml', yaml: 'yaml',
+      };
+      const language = langMap[ext.toLowerCase()] || ext;
+
+      // Save to DB
+      const existing = await db.query.files.findFirst({
+        where: (f, { and, eq: e }) =>
+          and(e(f.projectId, this.projectId), e(f.path, file.path)),
+      });
+      if (!existing) {
+        await db.insert(filesTable).values({
+          projectId: this.projectId,
+          path: file.path,
+          content: file.content,
+          language,
+        });
+      }
+
+      // Emit to client so preview updates immediately
+      this.emit({
+        type: 'file:changed',
+        projectId: this.projectId,
+        path: file.path,
+        content: file.content,
+        language,
+      });
     }
   }
 
@@ -556,7 +858,6 @@ export class AgentOrchestrator {
           messages: conversationMessages,
         });
       } catch (error: any) {
-        // Provide user-friendly error messages for common API errors
         const status = error.status || error.statusCode;
         const msg = error.message || '';
 
