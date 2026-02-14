@@ -95,15 +95,17 @@ export class SupabaseSandbox {
     // Log the job to Supabase (if connected)
     const jobId = uuidv4();
     if (this.supabase) {
-      await this.supabase.from('sandbox_jobs').insert({
-        id: jobId,
-        project_id: this.projectId,
-        type: 'exec',
-        command,
-        status: 'running',
-        timeout_ms: timeout,
-        started_at: new Date().toISOString(),
-      }).catch(() => {});
+      try {
+        await this.supabase.from('sandbox_jobs').insert({
+          id: jobId,
+          project_id: this.projectId,
+          type: 'exec',
+          command,
+          status: 'running',
+          timeout_ms: timeout,
+          started_at: new Date().toISOString(),
+        });
+      } catch { /* ignore insert errors */ }
     }
 
     // Sync files from Supabase to temp dir before execution
@@ -135,7 +137,7 @@ export class SupabaseSandbox {
         cwd: this.tempDir,
         timeout,
         maxBuffer: 10 * 1024 * 1024,
-        shell: isWindows ? 'cmd.exe' : true,
+        shell: isWindows ? 'cmd.exe' : '/bin/sh',
         env: {
           ...process.env,
           PATH: process.env.PATH,
@@ -166,17 +168,18 @@ export class SupabaseSandbox {
 
     // Update the job record (if Supabase connected)
     if (this.supabase) {
-      await this.supabase
-        .from('sandbox_jobs')
-        .update({
-          status: result.exitCode === 0 ? 'completed' : 'failed',
-          exit_code: result.exitCode,
-          stdout: result.stdout.substring(0, 50000),
-          stderr: result.stderr.substring(0, 50000),
-          completed_at: new Date().toISOString(),
-        })
-        .eq('id', jobId)
-        .catch(() => {});
+      try {
+        await this.supabase
+          .from('sandbox_jobs')
+          .update({
+            status: result.exitCode === 0 ? 'completed' : 'failed',
+            exit_code: result.exitCode,
+            stdout: result.stdout.substring(0, 50000),
+            stderr: result.stderr.substring(0, 50000),
+            completed_at: new Date().toISOString(),
+          })
+          .eq('id', jobId);
+      } catch { /* ignore update errors */ }
     }
 
     return result;

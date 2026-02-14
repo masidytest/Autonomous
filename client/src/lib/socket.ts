@@ -102,10 +102,21 @@ function setupListeners(sock: Socket) {
 
   sock.on('task:failed', (data: { taskId: string; error: string }) => {
     useAgentStore.setState({ isExecuting: false, taskStatus: 'failed' });
+
+    // Provide actionable error messages
+    let errorContent = data.error;
+    if (data.error.includes('credit balance') || data.error.includes('billing')) {
+      errorContent = 'AI credits depleted — Please update your Anthropic API key with a funded account. Go to console.anthropic.com to check your billing.';
+    } else if (data.error.includes('Invalid') && data.error.includes('API key')) {
+      errorContent = 'Invalid API key — The server\'s Anthropic API key is incorrect or expired. Update it in your deployment environment variables.';
+    } else if (data.error.includes('overloaded') || data.error.includes('529')) {
+      errorContent = 'AI service is temporarily overloaded. Please try again in a few moments.';
+    }
+
     useAgentStore.getState().addMessage({
       id: uuidv4(),
       role: 'error',
-      content: `Task failed: ${data.error}`,
+      content: errorContent,
       timestamp: Date.now(),
     });
   });
@@ -127,13 +138,18 @@ function setupListeners(sock: Socket) {
     'file:changed',
     (data: { projectId: string; path: string; content: string; language?: string }) => {
       useAgentStore.getState().updateFile(data.path, data.content, data.language);
-      useAgentStore.getState().setActiveTab('code');
+      // Don't auto-switch to code tab — keep showing preview so user sees live updates
+      // Only switch to code tab if user is on a non-content tab like clipboard
+      const currentTab = useAgentStore.getState().activeTab;
+      if (currentTab === 'clipboard' || currentTab === 'files') {
+        useAgentStore.getState().setActiveTab('browser');
+      }
     }
   );
 
   sock.on('terminal:output', (data: { taskId: string; output: string }) => {
     useAgentStore.getState().appendTerminalOutput(data.output);
-    useAgentStore.getState().setActiveTab('terminal');
+    // Don't auto-switch to terminal — keep preview visible
   });
 
   sock.on(

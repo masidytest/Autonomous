@@ -496,12 +496,48 @@ export class AgentOrchestrator {
           messages: conversationMessages,
         });
       } catch (error: any) {
-        if (error.status === 429 && attempt < retries) {
+        // Provide user-friendly error messages for common API errors
+        const status = error.status || error.statusCode;
+        const msg = error.message || '';
+
+        // Billing / credit errors — don't retry
+        if (status === 400 && (msg.includes('credit balance') || msg.includes('billing'))) {
+          throw new Error(
+            'Anthropic API credit balance is too low. Please check your API key and billing at console.anthropic.com. ' +
+            'Make sure the ANTHROPIC_API_KEY environment variable on your server matches a funded account.'
+          );
+        }
+
+        // Invalid API key — don't retry
+        if (status === 401) {
+          throw new Error(
+            'Invalid Anthropic API key. Please verify your ANTHROPIC_API_KEY environment variable is correct and active at console.anthropic.com/settings/keys.'
+          );
+        }
+
+        // Rate limit — retry with backoff
+        if (status === 429 && attempt < retries) {
           const delay = Math.pow(2, attempt + 1) * 1000;
           console.log(`Rate limited. Retrying in ${delay}ms...`);
           await new Promise((r) => setTimeout(r, delay));
           continue;
         }
+
+        // Overloaded — retry with backoff
+        if (status === 529 && attempt < retries) {
+          const delay = Math.pow(2, attempt + 1) * 2000;
+          console.log(`API overloaded. Retrying in ${delay}ms...`);
+          await new Promise((r) => setTimeout(r, delay));
+          continue;
+        }
+
+        // Model not found
+        if (status === 404) {
+          throw new Error(
+            `AI model "${process.env.AI_MODEL || 'claude-opus-4-6'}" not found. Check the AI_MODEL environment variable.`
+          );
+        }
+
         throw error;
       }
     }

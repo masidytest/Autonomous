@@ -353,7 +353,7 @@ export function Workspace() {
   /* ── Build a live preview blob URL from written files ── */
   const previewBlobUrl = (() => {
     if (files.length === 0) return null;
-    const htmlFile = files.find(f => f.path.endsWith('index.html'));
+    const htmlFile = files.find(f => f.path.endsWith('index.html') || f.path.endsWith('.html'));
     if (!htmlFile) return null;
 
     let html = htmlFile.content;
@@ -377,6 +377,21 @@ export function Workspace() {
       const scriptRegex = new RegExp(`<script[^>]*src=["'][^"']*${fileName.replace('.', '\\.')}["'][^>]*>\\s*</script>`, 'gi');
       html = html.replace(scriptRegex, `<script>${js.content}</script>`);
     }
+    // If JS files weren't referenced via script tags, append them before </body>
+    if (jsFiles.length > 0) {
+      for (const js of jsFiles) {
+        const fileName = js.path.split('/').pop() || '';
+        if (!html.includes(js.content.substring(0, 40))) {
+          // Only inject if not already present
+          const scriptTag = `<script>/* ${fileName} */\n${js.content}</script>`;
+          if (html.includes('</body>')) {
+            html = html.replace('</body>', `${scriptTag}\n</body>`);
+          } else {
+            html += scriptTag;
+          }
+        }
+      }
+    }
     try {
       const blob = new Blob([html], { type: 'text/html' });
       return URL.createObjectURL(blob);
@@ -384,6 +399,9 @@ export function Workspace() {
       return null;
     }
   })();
+
+  // Generate a content fingerprint so iframe refreshes when files change
+  const previewKey = files.map(f => `${f.path}:${f.content.length}`).join('|');
 
   /* ── Step status icon ── */
   function StepIcon({ status }: { status: string }) {
@@ -645,7 +663,7 @@ export function Workspace() {
           ) : deployUrl ? (
             <iframe src={deployUrl} title="Live preview" style={{ width: '100%', height: '100%', border: 'none' }} sandbox="allow-scripts allow-same-origin allow-popups allow-forms" />
           ) : previewBlobUrl ? (
-            <iframe key={previewBlobUrl} src={previewBlobUrl} title="Local preview" style={{ width: '100%', height: '100%', border: 'none' }} sandbox="allow-scripts allow-same-origin" />
+            <iframe key={previewKey} src={previewBlobUrl} title="Local preview" style={{ width: '100%', height: '100%', border: 'none' }} sandbox="allow-scripts allow-same-origin" />
           ) : (
             <p style={{ color: '#999' }}>No preview available yet</p>
           )}
@@ -1248,7 +1266,7 @@ export function Workspace() {
                     />
                   ) : previewBlobUrl ? (
                     <iframe
-                      key={previewBlobUrl}
+                      key={previewKey}
                       src={previewBlobUrl}
                       title="Local preview"
                       style={{ width: '100%', height: '100%', border: 'none' }}
@@ -1256,42 +1274,85 @@ export function Workspace() {
                     />
                   ) : (
                     <div style={{ textAlign: 'center', padding: 40 }}>
-                      {/* Skeleton card */}
-                      <div
-                        style={{
-                          width: 280,
-                          margin: '0 auto 24px',
-                          padding: 20,
-                          borderRadius: 12,
-                          border: '1px solid #e8e5e0',
-                        }}
-                      >
-                        <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
-                          <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#e0ddd8' }} />
-                          <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#e0ddd8' }} />
-                          <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#e0ddd8' }} />
-                        </div>
-                        <div style={{ display: 'flex', gap: 12 }}>
-                          <div style={{ flex: 1 }}>
-                            <div style={{ height: 8, backgroundColor: '#f0ede8', borderRadius: 4, marginBottom: 8 }} />
-                            <div style={{ height: 8, backgroundColor: '#f0ede8', borderRadius: 4, width: '60%' }} />
+                      {isExecuting ? (
+                        /* Building animation */
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+                          <div style={{
+                            width: 56, height: 56, borderRadius: 16,
+                            background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            position: 'relative',
+                          }}>
+                            <Loader2 size={24} color="#fff" style={{ animation: 'spin 1.5s linear infinite' }} />
+                            <div style={{
+                              position: 'absolute', inset: -4, borderRadius: 20,
+                              border: '2px solid #6366f120',
+                              animation: 'stepPulse 2s ease-in-out infinite',
+                            }} />
                           </div>
-                          <div style={{ flex: 1 }}>
-                            <div style={{ height: 8, backgroundColor: '#f0ede8', borderRadius: 4, marginBottom: 8 }} />
-                            <div style={{ height: 8, backgroundColor: '#f0ede8', borderRadius: 4, width: '80%' }} />
+                          <div>
+                            <p style={{ fontSize: 15, fontWeight: 600, color: '#1a1a1a', marginBottom: 4 }}>
+                              Building your project...
+                            </p>
+                            <p style={{ fontSize: 13, color: '#888' }}>
+                              {files.length > 0
+                                ? `${files.length} file${files.length > 1 ? 's' : ''} written — waiting for HTML to preview`
+                                : 'AI is planning and writing code'}
+                            </p>
+                          </div>
+                          {/* Shimmer progress bar */}
+                          <div style={{
+                            width: 200, height: 3, backgroundColor: '#e8e5e0',
+                            borderRadius: 2, overflow: 'hidden',
+                          }}>
+                            <div style={{
+                              height: '100%', width: '60%',
+                              background: 'linear-gradient(90deg, #6366f1, #8b5cf6, #6366f1)',
+                              borderRadius: 2, backgroundSize: '200% 100%',
+                              animation: 'progressShimmer 2s linear infinite',
+                            }} />
                           </div>
                         </div>
-                        <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
-                          <div style={{ flex: 1, height: 40, backgroundColor: '#f0ede8', borderRadius: 6 }} />
-                          <div style={{ flex: 1, height: 40, backgroundColor: '#f0ede8', borderRadius: 6 }} />
-                        </div>
-                      </div>
-                      <p style={{ fontSize: 14, color: '#888', marginBottom: 4 }}>
-                        Loading preview, please wait...
-                      </p>
-                      <p style={{ fontSize: 12, color: '#bbb' }}>
-                        Send a message to start building your project.
-                      </p>
+                      ) : (
+                        /* Static skeleton when idle */
+                        <>
+                          <div
+                            style={{
+                              width: 280,
+                              margin: '0 auto 24px',
+                              padding: 20,
+                              borderRadius: 12,
+                              border: '1px solid #e8e5e0',
+                            }}
+                          >
+                            <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
+                              <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#e0ddd8' }} />
+                              <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#e0ddd8' }} />
+                              <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#e0ddd8' }} />
+                            </div>
+                            <div style={{ display: 'flex', gap: 12 }}>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ height: 8, backgroundColor: '#f0ede8', borderRadius: 4, marginBottom: 8 }} />
+                                <div style={{ height: 8, backgroundColor: '#f0ede8', borderRadius: 4, width: '60%' }} />
+                              </div>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ height: 8, backgroundColor: '#f0ede8', borderRadius: 4, marginBottom: 8 }} />
+                                <div style={{ height: 8, backgroundColor: '#f0ede8', borderRadius: 4, width: '80%' }} />
+                              </div>
+                            </div>
+                            <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
+                              <div style={{ flex: 1, height: 40, backgroundColor: '#f0ede8', borderRadius: 6 }} />
+                              <div style={{ flex: 1, height: 40, backgroundColor: '#f0ede8', borderRadius: 6 }} />
+                            </div>
+                          </div>
+                          <p style={{ fontSize: 14, color: '#888', marginBottom: 4 }}>
+                            Preview will appear here
+                          </p>
+                          <p style={{ fontSize: 12, color: '#bbb' }}>
+                            Send a message to start building your project
+                          </p>
+                        </>
+                      )}
                     </div>
                   )}
                 </div>

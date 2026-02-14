@@ -80,7 +80,8 @@ router.get('/api/projects/:id', async (req, res) => {
 
 router.delete('/api/projects/:id', requireAuth, async (req, res) => {
   try {
-    await db.delete(projects).where(eq(projects.id, req.params.id));
+    const id = req.params.id as string;
+    await db.delete(projects).where(eq(projects.id, id));
     res.json({ success: true });
   } catch (error: any) {
     res.status(500).json({ error: error.message });

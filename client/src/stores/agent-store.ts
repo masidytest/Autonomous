@@ -91,7 +91,7 @@ const initialState = {
   isExecuting: false,
   isPaused: false,
   pauseQuestion: null,
-  activeTab: 'terminal' as const,
+  activeTab: 'browser' as const,
 };
 
 export const useAgentStore = create<AgentState>((set) => ({
