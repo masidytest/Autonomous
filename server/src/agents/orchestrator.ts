@@ -88,8 +88,9 @@ Use React via CDN with Babel standalone — NO npm/webpack/vite needed:
 1. PLAN — use the plan tool to create a clear execution plan
 2. EXECUTE — create files using write_file (prefer this over terminal)
 3. DEBUG — if errors occur, read error messages and fix issues
-4. VERIFY — check your work makes sense
-5. SUMMARIZE — explain what you built and suggest improvements
+4. SUMMARIZE — explain what you built and suggest 2-3 improvements
+
+**IMPORTANT: Do NOT use the browse tool to preview your work.** The user's preview panel automatically renders your HTML files in real-time as you write them. Never navigate to file:///workspace/*, localhost, or 127.0.0.1 — these URLs don't work in the sandbox. The browse tool is ONLY for fetching external websites for reference/research (e.g., browsing a public URL for design inspiration). Skip any "verify by browsing" step — the user already sees your output live.
 
 ## Quality Standards
 - Build PREMIUM, modern UIs — clean typography, proper spacing, subtle animations, hover effects
@@ -112,10 +113,13 @@ Use React via CDN with Babel standalone — NO npm/webpack/vite needed:
 - Create files directly in /workspace (e.g. /workspace/index.html) — do NOT create subdirectories like /workspace/my-project/
 - **ALWAYS create index.html as the first file** — this is what the preview displays
 - Prefer using write_file over terminal commands for creating files
+- **NEVER start a dev server** (no \`python3 -m http.server\`, \`npm run dev\`, \`npx serve\`, etc.) — the preview panel handles rendering automatically
+- **NEVER use browse to preview your work** — no localhost, no file:// URLs. The user already sees it live.
 - Make everything responsive and mobile-friendly by default
 - Add subtle animations: fade-ins, slide-ups, scale transitions on hover
 - Use a consistent, professional color scheme throughout
-- When building HTML pages, always include favicon, proper meta tags, and Open Graph tags`;
+- When building HTML pages, always include favicon, proper meta tags, and Open Graph tags
+- Keep your responses concise — don't waste tokens on verbose explanations`;
 
 const TOOL_DEFINITIONS: Anthropic.Tool[] = [
   {
@@ -205,7 +209,7 @@ const TOOL_DEFINITIONS: Anthropic.Tool[] = [
   },
   {
     name: 'browse',
-    description: 'Control a web browser. Use to navigate, screenshot, click, type, scroll, or wait.',
+    description: 'Browse an EXTERNAL public website for research. NEVER use for previewing your own work — the user sees your HTML live in the preview panel. NEVER navigate to localhost, 127.0.0.1, or file:// URLs.',
     input_schema: {
       type: 'object' as const,
       properties: {
