@@ -1361,88 +1361,106 @@ export function Workspace() {
                       sandbox="allow-scripts allow-same-origin allow-popups allow-modals"
                     />
                   ) : (
-                    <div style={{ textAlign: 'center', padding: 40 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', padding: '40px 24px', textAlign: 'center' }}>
                       {isExecuting ? (
-                        /* Building animation */
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
-                          <div style={{
-                            width: 56, height: 56, borderRadius: 16,
-                            background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            position: 'relative',
-                          }}>
-                            <Loader2 size={24} color="#fff" style={{ animation: 'spin 1.5s linear infinite' }} />
+                        /* Live building state with step messages */
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, maxWidth: 360 }}>
+                          {/* Animated code icon */}
+                          <div style={{ position: 'relative' }}>
                             <div style={{
-                              position: 'absolute', inset: -4, borderRadius: 20,
-                              border: '2px solid #6366f120',
+                              width: 64, height: 64, borderRadius: 20,
+                              background: 'linear-gradient(135deg, #1a1a1a 0%, #333 100%)',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+                            }}>
+                              <Code2 size={28} color="#fff" />
+                            </div>
+                            {/* Pulsing ring */}
+                            <div style={{
+                              position: 'absolute', inset: -6, borderRadius: 26,
+                              border: '2px solid rgba(26,26,26,0.08)',
                               animation: 'stepPulse 2s ease-in-out infinite',
                             }} />
+                            {/* Status dot */}
+                            <div style={{
+                              position: 'absolute', bottom: -2, right: -2,
+                              width: 16, height: 16, borderRadius: '50%',
+                              backgroundColor: '#22c55e', border: '3px solid #fff',
+                              animation: 'stepPulse 1.5s ease-in-out infinite',
+                            }} />
                           </div>
+
+                          {/* Status text */}
                           <div>
-                            <p style={{ fontSize: 15, fontWeight: 600, color: '#1a1a1a', marginBottom: 4 }}>
-                              Building your project...
+                            <p style={{ fontSize: 16, fontWeight: 600, color: '#1a1a1a', marginBottom: 6 }}>
+                              {steps.length === 0 ? 'Starting build...' :
+                               steps.some(s => s.status === 'running') ? 'Building...' :
+                               'Finishing up...'}
                             </p>
-                            <p style={{ fontSize: 13, color: '#888', marginBottom: 2 }}>
-                              {files.length > 0
-                                ? `${files.length} file${files.length > 1 ? 's' : ''} written — waiting for HTML to preview`
-                                : 'Opus 4.6 is planning and writing code'}
-                            </p>
-                            <p style={{ fontSize: 11, color: '#a78bfa' }}>
-                              Powered by Claude Opus 4.6
+                            {/* Show current/last step */}
+                            <p style={{ fontSize: 13, color: '#666', lineHeight: 1.5, marginBottom: 4 }}>
+                              {(() => {
+                                const running = steps.find(s => s.status === 'running');
+                                const lastCompleted = [...steps].reverse().find(s => s.status === 'completed');
+                                if (running) return running.title;
+                                if (lastCompleted) return `Done: ${lastCompleted.title}`;
+                                return 'Analyzing your request...';
+                              })()}
                             </p>
                           </div>
-                          {/* Shimmer progress bar */}
+
+                          {/* Step counter pills */}
+                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
+                            {files.length > 0 && (
+                              <span style={{
+                                fontSize: 12, fontWeight: 500, color: '#22c55e',
+                                backgroundColor: '#f0fdf4', padding: '4px 10px',
+                                borderRadius: 20, border: '1px solid #dcfce7',
+                              }}>
+                                {files.length} file{files.length > 1 ? 's' : ''} written
+                              </span>
+                            )}
+                            {steps.filter(s => s.status === 'completed').length > 0 && (
+                              <span style={{
+                                fontSize: 12, fontWeight: 500, color: '#666',
+                                backgroundColor: '#f5f3ef', padding: '4px 10px',
+                                borderRadius: 20, border: '1px solid #e8e5e0',
+                              }}>
+                                {steps.filter(s => s.status === 'completed').length} step{steps.filter(s => s.status === 'completed').length > 1 ? 's' : ''} done
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Subtle progress bar */}
                           <div style={{
-                            width: 200, height: 3, backgroundColor: '#e8e5e0',
+                            width: 180, height: 3, backgroundColor: '#e8e5e0',
                             borderRadius: 2, overflow: 'hidden',
                           }}>
                             <div style={{
-                              height: '100%', width: '60%',
-                              background: 'linear-gradient(90deg, #6366f1, #8b5cf6, #6366f1)',
+                              height: '100%', width: '100%',
+                              background: 'linear-gradient(90deg, transparent, #1a1a1a, transparent)',
                               borderRadius: 2, backgroundSize: '200% 100%',
-                              animation: 'progressShimmer 2s linear infinite',
+                              animation: 'progressShimmer 1.5s ease-in-out infinite',
                             }} />
                           </div>
                         </div>
                       ) : (
-                        /* Static skeleton when idle */
-                        <>
-                          <div
-                            style={{
-                              width: 280,
-                              margin: '0 auto 24px',
-                              padding: 20,
-                              borderRadius: 12,
-                              border: '1px solid #e8e5e0',
-                            }}
-                          >
-                            <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
-                              <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#e0ddd8' }} />
-                              <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#e0ddd8' }} />
-                              <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#e0ddd8' }} />
-                            </div>
-                            <div style={{ display: 'flex', gap: 12 }}>
-                              <div style={{ flex: 1 }}>
-                                <div style={{ height: 8, backgroundColor: '#f0ede8', borderRadius: 4, marginBottom: 8 }} />
-                                <div style={{ height: 8, backgroundColor: '#f0ede8', borderRadius: 4, width: '60%' }} />
-                              </div>
-                              <div style={{ flex: 1 }}>
-                                <div style={{ height: 8, backgroundColor: '#f0ede8', borderRadius: 4, marginBottom: 8 }} />
-                                <div style={{ height: 8, backgroundColor: '#f0ede8', borderRadius: 4, width: '80%' }} />
-                              </div>
-                            </div>
-                            <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
-                              <div style={{ flex: 1, height: 40, backgroundColor: '#f0ede8', borderRadius: 6 }} />
-                              <div style={{ flex: 1, height: 40, backgroundColor: '#f0ede8', borderRadius: 6 }} />
-                            </div>
+                        /* Idle state — minimal and clean */
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+                          <div style={{
+                            width: 56, height: 56, borderRadius: 16,
+                            backgroundColor: '#f5f3ef', border: '1px solid #e8e5e0',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          }}>
+                            <Eye size={24} color="#bbb" />
                           </div>
-                          <p style={{ fontSize: 14, color: '#888', marginBottom: 4 }}>
+                          <p style={{ fontSize: 14, fontWeight: 500, color: '#999' }}>
                             Preview will appear here
                           </p>
-                          <p style={{ fontSize: 12, color: '#bbb' }}>
-                            Send a message to start building your project
+                          <p style={{ fontSize: 12, color: '#ccc' }}>
+                            Send a message to start building
                           </p>
-                        </>
+                        </div>
                       )}
                     </div>
                   )}
