@@ -225,7 +225,7 @@ export function Workspace() {
     const text = inputValue.trim();
     if (!text || !currentProject) return;
     if (isPaused && currentTaskId) {
-      resumeTask(currentTaskId, text);
+      resumeTask(currentTaskId, text, currentProject.id);
     } else {
       createTask(currentProject.id, text);
     }
@@ -240,7 +240,7 @@ export function Workspace() {
   }
 
   function handleCancel() {
-    if (currentTaskId) cancelTask(currentTaskId);
+    if (currentTaskId) cancelTask(currentTaskId, currentProject?.id);
   }
 
   function handleShare() {

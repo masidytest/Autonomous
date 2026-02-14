@@ -240,11 +240,11 @@ export function createTask(projectId: string, prompt: string) {
   getSocket().emit('task:create', { projectId, prompt, skills: enabledSkills });
 }
 
-export function cancelTask(taskId: string) {
-  getSocket().emit('task:cancel', { taskId });
+export function cancelTask(taskId: string, projectId?: string) {
+  getSocket().emit('task:cancel', { taskId, projectId });
 }
 
-export function resumeTask(taskId: string, answer: string) {
+export function resumeTask(taskId: string, answer: string, projectId?: string) {
   useAgentStore.setState({ isPaused: false, pauseQuestion: null });
   useAgentStore.getState().addMessage({
     id: uuidv4(),
@@ -252,7 +252,7 @@ export function resumeTask(taskId: string, answer: string) {
     content: answer,
     timestamp: Date.now(),
   });
-  getSocket().emit('task:resume', { taskId, answer });
+  getSocket().emit('task:resume', { taskId, answer, projectId });
 }
 
 export function sendTerminalInput(projectId: string, data: string) {

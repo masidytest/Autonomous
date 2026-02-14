@@ -78,9 +78,18 @@ router.get('/api/projects/:id', async (req, res) => {
   }
 });
 
-router.delete('/api/projects/:id', requireAuth, async (req, res) => {
+router.delete('/api/projects/:id', requireAuth, async (req: any, res) => {
   try {
     const id = req.params.id as string;
+    const project = await db.query.projects.findFirst({
+      where: eq(projects.id, id),
+    });
+    if (!project) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+    if (project.userId && project.userId !== req.authUser.id) {
+      return res.status(403).json({ error: 'Not authorized to delete this project' });
+    }
     await db.delete(projects).where(eq(projects.id, id));
     res.json({ success: true });
   } catch (error: any) {
@@ -162,6 +171,9 @@ router.post('/api/projects/:id/github/create-repo', requireAuth, async (req: any
     if (!project) {
       return res.status(404).json({ error: 'Project not found' });
     }
+    if (project.userId && project.userId !== req.authUser.id) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
 
     const { name, description, isPrivate } = req.body;
     const octokit = new Octokit({ auth: user.githubAccessToken });
@@ -194,6 +206,9 @@ router.post('/api/projects/:id/github/push', requireAuth, async (req: any, res) 
     });
     if (!project) {
       return res.status(404).json({ error: 'Project not found' });
+    }
+    if (project.userId && project.userId !== req.authUser.id) {
+      return res.status(403).json({ error: 'Not authorized' });
     }
 
     // Get all project files from DB
@@ -301,6 +316,9 @@ router.post('/api/projects/:id/deploy', requireAuth, async (req: any, res) => {
     });
     if (!project) {
       return res.status(404).json({ error: 'Project not found' });
+    }
+    if (project.userId && project.userId !== req.authUser.id) {
+      return res.status(403).json({ error: 'Not authorized' });
     }
 
     // Get all project files
@@ -412,6 +430,9 @@ router.post('/api/projects/:id/share', requireAuth, async (req: any, res) => {
     });
     if (!project) {
       return res.status(404).json({ error: 'Project not found' });
+    }
+    if (project.userId && project.userId !== req.authUser.id) {
+      return res.status(403).json({ error: 'Not authorized' });
     }
 
     const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';

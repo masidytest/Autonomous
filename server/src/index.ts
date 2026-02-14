@@ -43,7 +43,7 @@ app.use(
       if (allowedOrigins.includes(origin) || origin.endsWith('.onrender.com')) {
         return callback(null, true);
       }
-      callback(null, true); // Permissive for now
+      callback(new Error(`Origin ${origin} not allowed by CORS`));
     },
     credentials: true,
   })

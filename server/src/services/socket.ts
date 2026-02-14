@@ -22,7 +22,7 @@ export function createSocketServer(httpServer: HttpServer): SocketServer {
         if (allowedOrigins.includes(origin) || origin.endsWith('.onrender.com')) {
           return callback(null, true);
         }
-        callback(null, true);
+        callback(new Error(`Origin ${origin} not allowed by CORS`));
       },
       methods: ['GET', 'POST'],
       credentials: true,
@@ -91,18 +91,20 @@ export function createSocketServer(httpServer: HttpServer): SocketServer {
     );
 
     // Cancel task
-    socket.on('task:cancel', ({ taskId }: { taskId: string }) => {
-      for (const [, orchestrator] of orchestrators) {
-        orchestrator.cancel();
+    socket.on('task:cancel', ({ projectId }: { projectId?: string; taskId?: string }) => {
+      if (projectId) {
+        const orchestrator = orchestrators.get(projectId);
+        if (orchestrator) orchestrator.cancel();
       }
     });
 
     // Resume task (answer to ask_user)
     socket.on(
       'task:resume',
-      ({ taskId, answer }: { taskId: string; answer: string }) => {
-        for (const [, orchestrator] of orchestrators) {
-          orchestrator.resume(answer);
+      ({ projectId, answer }: { projectId?: string; taskId?: string; answer: string }) => {
+        if (projectId) {
+          const orchestrator = orchestrators.get(projectId);
+          if (orchestrator) orchestrator.resume(answer);
         }
       }
     );
