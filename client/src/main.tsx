@@ -9,6 +9,8 @@ import { Agents } from './pages/Agents';
 import { Library } from './pages/Library';
 import { AuthCallback } from './pages/AuthCallback';
 import { Docs } from './pages/Docs';
+import { ToastContainer } from './components/Toast';
+import { UpgradeModal } from './components/UpgradeModal';
 import './index.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
@@ -25,5 +27,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         <Route path="/project/:id" element={<Workspace />} />
       </Routes>
     </BrowserRouter>
+    <ToastContainer />
+    <UpgradeModal />
   </React.StrictMode>,
 );

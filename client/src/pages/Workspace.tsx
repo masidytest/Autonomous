@@ -44,6 +44,7 @@ import { NewProjectModal } from '../components/NewProjectModal';
 import { InviteModal } from '../components/InviteModal';
 import { SettingsModal } from '../components/SettingsModal';
 import { useAgentStore } from '../stores/agent-store';
+import { useUsageStore } from '../stores/usage-store';
 import { fetchProject, createProject, createGitHubRepo, pushToGitHub, shareProject, getDownloadUrl } from '../lib/api';
 import { joinProject, leaveProject, createTask, cancelTask, resumeTask } from '../lib/socket';
 import type { ChatMessage as ChatMessageType } from '@shared/types';
@@ -915,7 +916,15 @@ export function Workspace() {
                   <p style={{ fontSize: 13, color: '#bbb' }}>Describe your project and Masidy will build it for you</p>
                 </div>
               ) : (
-                messages.map(renderMessage)
+                <>
+                  {messages.map(renderMessage)}
+                  {/* Post-build suggestion cards */}
+                  {!isExecuting && !isPaused && messages.length > 0 && messages[messages.length - 1]?.role === 'assistant' && (
+                    <SuggestionCards onSuggestionClick={(text) => {
+                      if (currentProject) createTask(currentProject.id, text);
+                    }} />
+                  )}
+                </>
               )}
               <div ref={messagesEndRef} />
             </div>
@@ -1584,7 +1593,7 @@ export function Workspace() {
               )}
             </div>
 
-            {/* Bottom branding */}
+            {/* Bottom branding + usage */}
             <div
               style={{
                 padding: '8px 16px',
@@ -1592,12 +1601,14 @@ export function Workspace() {
                 backgroundColor: '#faf9f7',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'flex-end',
-                gap: 6,
+                justifyContent: 'space-between',
               }}
             >
-              <span style={{ fontSize: 11, color: '#ccc' }}>from</span>
-              <span style={{ fontSize: 13, fontWeight: 700, color: '#999', letterSpacing: '-0.01em' }}>masidy</span>
+              <UsageBar />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: 11, color: '#ccc' }}>from</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#999', letterSpacing: '-0.01em' }}>masidy</span>
+              </div>
             </div>
           </div>
         </div>
@@ -1792,6 +1803,119 @@ function TaskProgressCard({
         </div>
       )}
     </div>
+  );
+}
+
+/* ── Post-build suggestion cards ── */
+const suggestionSets = [
+  [
+    { label: 'Add dark mode', prompt: 'Add a dark mode toggle with a smooth theme switch. Store the preference in localStorage.', icon: '🌙' },
+    { label: 'Add animations', prompt: 'Add smooth CSS animations and micro-interactions to all interactive elements — hover effects, transitions, and entrance animations.', icon: '✨' },
+    { label: 'Make responsive', prompt: 'Make the design fully responsive for mobile, tablet, and desktop. Add a hamburger menu for mobile navigation.', icon: '📱' },
+    { label: 'Deploy it', prompt: 'Deploy the project to production. Use the deploy tool with appropriate build and start commands.', icon: '🚀' },
+  ],
+  [
+    { label: 'Add loading states', prompt: 'Add skeleton loading states and shimmer animations for a premium feel while content loads.', icon: '⏳' },
+    { label: 'Improve accessibility', prompt: 'Add ARIA labels, keyboard navigation, focus indicators, and screen reader support for accessibility compliance.', icon: '♿' },
+    { label: 'Add error handling', prompt: 'Add comprehensive error handling with user-friendly error messages, retry buttons, and fallback UI states.', icon: '🛡️' },
+    { label: 'Push to GitHub', prompt: 'Push this code to GitHub and set up the repository.', icon: '📦' },
+  ],
+  [
+    { label: 'Add a footer', prompt: 'Add a professional footer with navigation links, social media icons, and a newsletter signup form.', icon: '📋' },
+    { label: 'Add search', prompt: 'Add a search bar with real-time filtering, highlighted results, and keyboard shortcuts (Ctrl+K).', icon: '🔍' },
+    { label: 'Add notifications', prompt: 'Add a toast notification system for success, error, and info messages with slide-in animations.', icon: '🔔' },
+    { label: 'Add form validation', prompt: 'Add real-time form validation with inline error messages, visual feedback, and a submit confirmation.', icon: '✅' },
+  ],
+];
+
+function SuggestionCards({ onSuggestionClick }: { onSuggestionClick: (prompt: string) => void }) {
+  const [suggestionSetIdx] = useState(() => Math.floor(Math.random() * suggestionSets.length));
+  const suggestions = suggestionSets[suggestionSetIdx];
+
+  return (
+    <div style={{ marginTop: 8, marginBottom: 12, animation: 'stepFadeIn 0.5s ease-out' }}>
+      <div style={{ fontSize: 12, color: '#999', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+        <Sparkles size={12} color="#d97706" />
+        What's next? Try one of these:
+      </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+        {suggestions.map((s) => (
+          <button
+            key={s.label}
+            onClick={() => onSuggestionClick(s.prompt)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '7px 12px',
+              fontSize: 12,
+              fontWeight: 500,
+              color: '#555',
+              backgroundColor: '#faf9f7',
+              border: '1px solid #e8e5e0',
+              borderRadius: 8,
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              transition: 'all 0.15s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#f0ede8';
+              e.currentTarget.style.borderColor = '#d4d0cb';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = '#faf9f7';
+              e.currentTarget.style.borderColor = '#e8e5e0';
+            }}
+          >
+            <span>{s.icon}</span>
+            {s.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ── Usage bar in footer ── */
+function UsageBar() {
+  const { tasksCompleted, freeTasksLimit, plan, setUpgradeModalOpen } = useUsageStore();
+  const usage = Math.min(100, (tasksCompleted / freeTasksLimit) * 100);
+
+  if (plan !== 'free') return null;
+
+  return (
+    <button
+      onClick={() => setUpgradeModalOpen(true)}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        background: 'none',
+        border: 'none',
+        cursor: 'pointer',
+        fontFamily: 'inherit',
+        padding: 0,
+      }}
+    >
+      <span style={{ fontSize: 11, color: '#999' }}>
+        {tasksCompleted}/{freeTasksLimit} builds
+      </span>
+      <div style={{
+        width: 60, height: 3, backgroundColor: '#e8e5e0',
+        borderRadius: 2, overflow: 'hidden',
+      }}>
+        <div style={{
+          height: '100%',
+          width: `${usage}%`,
+          backgroundColor: usage > 70 ? '#f59e0b' : '#10b981',
+          borderRadius: 2,
+          transition: 'width 0.5s',
+        }} />
+      </div>
+      {usage >= 50 && (
+        <span style={{ fontSize: 10, color: '#6366f1', fontWeight: 600 }}>Upgrade</span>
+      )}
+    </button>
   );
 }
 

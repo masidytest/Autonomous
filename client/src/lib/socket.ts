@@ -1,5 +1,7 @@
 import { io, type Socket } from 'socket.io-client';
 import { useAgentStore } from '../stores/agent-store';
+import { useUsageStore } from '../stores/usage-store';
+import { toastFriendly } from '../stores/toast-store';
 import { v4 as uuidv4 } from 'uuid';
 import type { StepUpdate, TaskPlan } from '@shared/types';
 
@@ -39,6 +41,8 @@ function setupListeners(sock: Socket) {
       steps: [],
       terminalOutput: '',
     });
+    // Track build start time
+    useUsageStore.getState().setBuildStartTime(Date.now());
   });
 
   sock.on('task:planning', (data: { taskId: string; plan: TaskPlan }) => {
@@ -73,6 +77,20 @@ function setupListeners(sock: Socket) {
           : m
       ),
     }));
+
+    // Periodic check-in toast every 5 completed steps
+    const completedSteps = useAgentStore.getState().steps.filter(s => s.status === 'completed').length;
+    if (completedSteps > 0 && completedSteps % 5 === 0) {
+      const checkIns = [
+        'Making great progress on your project!',
+        'Things are coming together nicely.',
+        'Your project is shaping up well!',
+        'Almost there — just finishing up the details.',
+        'Looking good so far! Hang tight.',
+      ];
+      const msg = checkIns[Math.floor(Math.random() * checkIns.length)];
+      toastFriendly(`${msg} (${completedSteps} steps done)`, 'Build Update');
+    }
   });
 
   sock.on('step:failed', (data: { taskId: string; step: StepUpdate; error: string }) => {
@@ -98,6 +116,8 @@ function setupListeners(sock: Socket) {
       content: data.result || 'Task completed successfully.',
       timestamp: Date.now(),
     });
+    // Track completed task in usage store (triggers achievements, friendly messages, upgrade prompts)
+    useUsageStore.getState().trackTaskCompleted();
   });
 
   sock.on('task:failed', (data: { taskId: string; error: string }) => {
@@ -139,11 +159,12 @@ function setupListeners(sock: Socket) {
     (data: { projectId: string; path: string; content: string; language?: string }) => {
       useAgentStore.getState().updateFile(data.path, data.content, data.language);
       // Don't auto-switch to code tab — keep showing preview so user sees live updates
-      // Only switch to code tab if user is on a non-content tab like clipboard
       const currentTab = useAgentStore.getState().activeTab;
       if (currentTab === 'clipboard' || currentTab === 'files') {
         useAgentStore.getState().setActiveTab('browser');
       }
+      // Track file creation in usage store
+      useUsageStore.getState().trackFileCreated();
     }
   );
 
@@ -188,6 +209,8 @@ function setupListeners(sock: Socket) {
       content: `Project deployed successfully! Live at: ${data.url}`,
       timestamp: Date.now(),
     });
+    // Track deployment in usage store
+    useUsageStore.getState().trackDeploy();
   });
 
   sock.on('error', (data: { message: string }) => {
